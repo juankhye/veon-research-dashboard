@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VEON (VEON US) — First-Principles Research Dashboard</title>
+<meta name="description" content="Hedge-fund quality interactive research dashboard on VEON Ltd: emerging-market digital operator across Pakistan, Ukraine, Kazakhstan, Bangladesh and Uzbekistan. Business model, footprint map, drivers, financials, FX sensitivity, SOTP valuation, bull vs bear, risks." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --bg-0:#070A12;--bg-1:#0B1020;--bg-2:#11172B;--bg-3:#171F38;
+  --line:rgba(255,255,255,0.08);--line-2:rgba(255,255,255,0.14);
+  --text:#E5EAF5;--text-dim:#9AA4BD;--text-mute:#6B7390;
+  --accent:#F5C542;--accent-2:#3987e5;--accent-3:#d55181;
+  --bull:#22C55E;--bear:#EF4444;--warn:#F59E0B;--premium:#A78BFA;
+  --glass:rgba(255,255,255,0.04);--glass-strong:rgba(255,255,255,0.07);
+  --shadow:0 18px 50px rgba(0,0,0,0.45);
+  --gradient-1:linear-gradient(135deg,#F5C542 0%,#3987e5 100%);
+  --gradient-2:linear-gradient(135deg,#A78BFA 0%,#d55181 100%);
+  --gradient-bear:linear-gradient(135deg,#EF4444 0%,#F59E0B 100%);
+  /* validated dark-mode categorical palette, fixed order = fixed country */
+  --c-pak:#3987e5;--c-ukr:#d95926;--c-kaz:#199e70;--c-ban:#c98500;--c-uzb:#d55181;--c-hq:#9085e9;--c-other:#6B7390;
+  --seq-1:#cde2fb;--seq-2:#86b6ef;--seq-3:#3987e5;--seq-4:#1c5cab;--seq-5:#0d366b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg-0);color:var(--text);font-family:'Inter',-apple-system,sans-serif;line-height:1.6;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(1200px 800px at 10% -10%,rgba(57,135,229,0.12),transparent 60%),radial-gradient(1000px 700px at 90% 0%,rgba(245,197,66,0.07),transparent 60%),radial-gradient(900px 600px at 50% 110%,rgba(167,139,250,0.06),transparent 60%),var(--bg-0);min-height:100vh;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{background:none;border:0;color:inherit;cursor:pointer;font-family:inherit}
+.mono{font-family:'JetBrains Mono',monospace}
+nav.top{position:sticky;top:0;z-index:1000;backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);background:rgba(7,10,18,0.82);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1440px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.brand-mark{width:40px;height:40px;border-radius:11px;background:var(--gradient-1);display:grid;place-items:center;color:#0B1020;font-weight:900;font-size:15px;box-shadow:0 8px 24px rgba(245,197,66,0.25)}
+.brand-text strong{font-weight:800;letter-spacing:.3px}
+.brand-text small{display:block;color:var(--text-mute);font-size:10px;letter-spacing:1.2px;text-transform:uppercase}
+.nav-links{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end}
+.nav-links a{padding:7px 10px;border-radius:8px;color:var(--text-dim);font-size:12px;font-weight:500;transition:all .18s ease;white-space:nowrap}
+.nav-links a:hover{color:var(--text);background:var(--glass)}
+.nav-links a.active{color:var(--accent);background:rgba(245,197,66,0.10)}
+.wrap{max-width:1440px;margin:0 auto;padding:64px 24px}
+section{scroll-margin-top:84px}
+.kicker{display:inline-block;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:var(--accent);background:rgba(245,197,66,0.08);padding:6px 12px;border-radius:6px;border:1px solid rgba(245,197,66,0.20);margin-bottom:18px;font-weight:600}
+.kicker.bear{color:var(--bear);background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.20)}
+.kicker.bull{color:var(--bull);background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.20)}
+.kicker.warn{color:var(--warn);background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.20)}
+.kicker.blue{color:var(--accent-2);background:rgba(57,135,229,0.10);border-color:rgba(57,135,229,0.25)}
+h1{font-size:clamp(34px,5.6vw,68px);font-weight:800;letter-spacing:-1.2px;line-height:1.05}
+h2{font-size:clamp(26px,3.4vw,42px);font-weight:700;letter-spacing:-.6px;line-height:1.15;margin-bottom:10px}
+h3{font-size:20px;font-weight:700;letter-spacing:-.2px;margin-bottom:8px}
+h4{font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:12px}
+.lede{color:var(--text-dim);font-size:17px;max-width:820px;line-height:1.65}
+.section-head{margin-bottom:34px;max-width:960px}
+p{color:var(--text-dim);font-size:15px}
+p strong,li strong{color:var(--text)}
+.hero{padding:56px 24px 0;max-width:1440px;margin:0 auto}
+.hero-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:36px;align-items:start}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}
+.stat{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
+.stat .v{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.stat .l{font-size:11px;color:var(--text-mute);text-transform:uppercase;letter-spacing:1.2px;margin-top:6px}
+.stat .s{font-size:11px;color:var(--text-dim);margin-top:4px}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow)}
+.card.tight{padding:16px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+.g-2-1{grid-template-columns:2fr 1fr}.g-1-2{grid-template-columns:1fr 2fr}.g-3-2{grid-template-columns:3fr 2fr}
+.chart-box{position:relative;width:100%;height:320px}
+.chart-box.tall{height:400px}.chart-box.short{height:240px}
+.chart-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.chart-sub{font-size:12px;color:var(--text-mute);margin-bottom:12px}
+.src{font-size:11px;color:var(--text-mute);margin-top:10px;line-height:1.5}
+.src b{color:var(--text-dim);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-mute);font-weight:600;text-align:left;padding:10px 10px;border-bottom:1px solid var(--line-2)}
+td{padding:10px 10px;border-bottom:1px solid var(--line);color:var(--text-dim);vertical-align:top}
+td:first-child{color:var(--text);font-weight:500}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.num{text-align:right;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+.tbl-wrap{overflow-x:auto}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.pill.bull{background:rgba(34,197,94,0.14);color:#4ade80}.pill.bear{background:rgba(239,68,68,0.14);color:#f87171}.pill.warn{background:rgba(245,158,11,0.14);color:#fbbf24}.pill.blue{background:rgba(57,135,229,0.16);color:#7fb3f0}.pill.mute{background:rgba(255,255,255,0.06);color:var(--text-dim)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.explain{border-left:3px solid var(--accent);padding:14px 18px;background:rgba(245,197,66,0.05);border-radius:0 12px 12px 0;margin:14px 0}
+.explain.blue{border-color:var(--accent-2);background:rgba(57,135,229,0.06)}
+.explain.bear{border-color:var(--bear);background:rgba(239,68,68,0.05)}
+.explain.bull{border-color:var(--bull);background:rgba(34,197,94,0.05)}
+.explain h5{font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.explain.blue h5{color:var(--accent-2)}.explain.bear h5{color:var(--bear)}.explain.bull h5{color:var(--bull)}
+.explain p{font-size:14px;color:var(--text-dim)}
+ul.clean{list-style:none}
+ul.clean li{padding:8px 0 8px 22px;position:relative;color:var(--text-dim);font-size:14px;border-bottom:1px dashed var(--line)}
+ul.clean li::before{content:"";position:absolute;left:0;top:15px;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+ul.clean.bull li::before{background:var(--bull)}ul.clean.bear li::before{background:var(--bear)}ul.clean.blue li::before{background:var(--accent-2)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab{padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;color:var(--text-dim);background:var(--glass);border:1px solid var(--line);transition:all .15s}
+.tab.active,.tab:hover{color:var(--text);border-color:var(--line-2);background:var(--glass-strong)}
+.tab.active{box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent)}
+.tabpane{display:none}.tabpane.active{display:block}
+.slider{width:100%;accent-color:var(--accent);margin:6px 0}
+.ctl{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim);margin-top:8px}
+.ctl b{color:var(--text);font-family:'JetBrains Mono',monospace}
+.big{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;letter-spacing:-1px;line-height:1}
+.big small{font-size:14px;color:var(--text-mute);font-family:'Inter';font-weight:500;letter-spacing:0}
+#map{height:560px;border-radius:16px;border:1px solid var(--line);overflow:hidden;background:#0b1020}
+.leaflet-container{background:#0b1020;font-family:'Inter'}
+.leaflet-popup-content-wrapper{background:#11172B;color:var(--text);border:1px solid var(--line-2);border-radius:12px;box-shadow:var(--shadow)}
+.leaflet-popup-tip{background:#11172B}
+.leaflet-popup-content{margin:12px 14px;font-size:13px;line-height:1.5}
+.map-panel{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:20px;min-height:560px}
+.map-panel h3{display:flex;align-items:center;gap:10px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 14px;font-size:13px;margin:12px 0}
+.kv span{color:var(--text-mute)}.kv b{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text);text-align:right}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);margin-top:12px}
+.legend span{display:flex;align-items:center;gap:6px}
+.timeline{position:relative;padding-left:26px}
+.timeline::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:2px;background:linear-gradient(var(--accent-2),var(--accent),var(--accent-3))}
+.tl{position:relative;padding:0 0 22px 18px}
+.tl::before{content:"";position:absolute;left:-23px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--bg-0);border:3px solid var(--accent)}
+.tl .y{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px}
+.tl .t{font-weight:600;color:var(--text);margin:2px 0}
+.tl p{font-size:13px}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:stretch}
+.flow .step{background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative;text-align:center}
+.flow .step .n{width:26px;height:26px;border-radius:50%;background:var(--gradient-1);color:#0B1020;font-weight:800;font-size:12px;display:grid;place-items:center;margin:0 auto 8px}
+.flow .step b{display:block;font-size:13px;margin-bottom:4px}
+.flow .step small{font-size:12px;color:var(--text-dim);line-height:1.4;display:block}
+.heat{display:grid;grid-template-columns:150px repeat(6,1fr);gap:4px;font-size:12px}
+.heat .h{color:var(--text-mute);text-transform:uppercase;letter-spacing:.8px;font-size:10px;padding:6px 4px;text-align:center}
+.heat .r{color:var(--text);font-weight:600;padding:10px 6px;display:flex;align-items:center}
+.heat .c{border-radius:6px;padding:10px 6px;text-align:center;font-weight:600;color:#fff;font-family:'JetBrains Mono',monospace;cursor:default}
+.h1{background:rgba(34,197,94,0.35)}.h2{background:rgba(245,197,66,0.40);color:#111!important}.h3{background:rgba(245,158,11,0.60)}.h4{background:rgba(239,68,68,0.55)}.h5{background:rgba(239,68,68,0.85)}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.vs .card{border-top:3px solid var(--bull)}.vs .card.bear{border-top-color:var(--bear)}
+.gl{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.gl div{background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:14px}
+.gl b{display:block;color:var(--accent);font-size:13px;margin-bottom:4px}
+.gl small{font-size:13px;color:var(--text-dim);line-height:1.5}
+.reveal{opacity:0;transform:translateY(18px);transition:all .6s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+footer{border-top:1px solid var(--line);padding:40px 24px;color:var(--text-mute);font-size:12px;text-align:center}
+.tv-box{border-radius:14px;overflow:hidden;border:1px solid var(--line);height:420px}
+.callout{display:flex;gap:14px;align-items:flex-start;background:rgba(57,135,229,0.08);border:1px solid rgba(57,135,229,0.25);border-radius:12px;padding:14px 16px;font-size:13px;color:var(--text-dim)}
+.callout .ic{font-size:20px;line-height:1}
+@media (max-width:1100px){.g4,.g5{grid-template-columns:repeat(2,1fr)}.flow{grid-template-columns:repeat(3,1fr)}.hero-grid{grid-template-columns:1fr}.g-2-1,.g-1-2,.g-3-2{grid-template-columns:1fr}.map-panel{min-height:0}}
+@media (max-width:760px){.g2,.g3,.g4,.g5,.vs,.gl{grid-template-columns:1fr}.hero-stats{grid-template-columns:repeat(2,1fr)}.flow{grid-template-columns:repeat(2,1fr)}.heat{grid-template-columns:110px repeat(6,1fr);font-size:10px}.nav-links{display:none}.wrap{padding:44px 16px}.hero{padding:36px 16px 0}#map{height:420px}}
+</style>
+</head>
+<body>
+<nav class="top"><div class="nav-inner">
+  <a class="brand" href="#top"><div class="brand-mark">VEON</div><div class="brand-text"><strong>VEON Ltd</strong><small>Nasdaq: VEON · Research Dashboard</small></div></a>
+  <div class="nav-links">
+    <a href="#telecom101">Telecom 101</a><a href="#history">History</a><a href="#map-sec">Footprint</a><a href="#countries">Countries</a><a href="#model">Flywheel</a><a href="#digital">Digital</a><a href="#drivers">Drivers</a><a href="#financials">Financials</a><a href="#fx">FX &amp; Macro</a><a href="#geo">Geopolitics</a><a href="#capital">Capital</a><a href="#assets">Spectrum &amp; Towers</a><a href="#moat">Moat</a><a href="#valuation">Valuation</a><a href="#bullbear">Bull / Bear</a><a href="#risks">Risks</a><a href="#watch">Catalysts</a><a href="#glossary">Glossary</a>
+  </div>
+</div></nav>
+
+<!-- ================= HERO ================= -->
+<header id="top" class="hero">
+  <div class="hero-grid">
+    <div>
+      <span class="kicker">First-principles research · Emerging-market digital operator</span>
+      <h1>VEON: five frontier telecoms turning into a fintech-and-apps platform</h1>
+      <p class="lede" style="margin-top:18px">VEON runs the #1 or #2 mobile network in Pakistan, Ukraine, Kazakhstan and Uzbekistan and the #3 in Bangladesh. Those networks reach roughly 151 million connectivity customers. On top of them it is building payments, lending, streaming, ride-hailing, healthcare and enterprise software, which already produce 27% of revenue and grow at 50%+. The stock trades at roughly 3x EBITDA, about half its emerging-market peers, because the markets are hard, the currencies devalue, and the group is complex. This dashboard explains every piece from scratch.</p>
+      <div class="hero-stats">
+        <div class="stat"><div class="v mono" data-count="1271" data-prefix="$" data-suffix="m">0</div><div class="l">2Q26 revenue</div><div class="s">+17.0% YoY in USD</div></div>
+        <div class="stat"><div class="v mono" data-count="26.9" data-suffix="%" data-dec="1">0</div><div class="l">Digital share of revenue</div><div class="s">from 20.5% a year earlier</div></div>
+        <div class="stat"><div class="v mono" data-count="43.4" data-suffix="%" data-dec="1">0</div><div class="l">Group EBITDA margin</div><div class="s">telecom 46%, digital 36%</div></div>
+        <div class="stat"><div class="v mono" data-count="151" data-suffix="m">0</div><div class="l">Connectivity customers</div><div class="s">plus 227.7m digital users</div></div>
+        <div class="stat"><div class="v mono" data-count="1.10" data-suffix="x" data-dec="2">0</div><div class="l">Net debt / EBITDAaL</div><div class="s">ex leases, 1.5x internal ceiling</div></div>
+        <div class="stat"><div class="v mono" data-count="2.9" data-suffix="x" data-dec="1">0</div><div class="l">EV / FY26E EBITDA</div><div class="s">at $68.82; peers 4.4–5.0x</div></div>
+      </div>
+      <div class="badge-row">
+        <span class="pill blue">HQ: Dubai (DIFC)</span><span class="pill blue">Listing: Nasdaq only</span><span class="pill mute">Reporting currency: USD</span><span class="pill mute">FY = calendar year</span><span class="pill warn">LetterOne / L1 owns ~45%</span><span class="pill bull">Buyback ≥ $100m/yr, shares cancelled</span>
+      </div>
+    </div>
+    <div>
+      <div class="tv-box"><div class="tradingview-widget-container" style="height:100%;width:100%"><div id="tv_chart" style="height:100%;width:100%"></div></div></div>
+      <div class="src" style="margin-top:8px">Live chart: TradingView. Reference price used in this dashboard's calculators: <b>$68.82</b> (Nasdaq close, 15 Sep 2026, IBKR). 52-week range $42.60–$69.50. Note the research in this folder was written at $52–$57.50 in August 2026; the stock has since rallied ~30%, so every multiple here is recomputed at the live price.</div>
+      <div class="card tight" style="margin-top:12px">
+        <div class="chart-title">What you are looking at, in one sentence per layer</div>
+        <ul class="clean">
+          <li><strong>Layer 1, connectivity:</strong> sell mobile voice and data to ~151m SIMs at $1–5 a month each. Stable, 46% margins, but needs ~20% of revenue reinvested every year in towers, radios and spectrum.</li>
+          <li><strong>Layer 2, digital:</strong> use the SIM relationship (identity, billing, distribution) to sell wallets, loans, TV, rides and medicine. 36% margins and only ~7% capex, growing 54%.</li>
+          <li><strong>Layer 3, the holding company:</strong> Dubai HQ owns the five operating companies, 83.6% of separately listed Kyivstar, and carries the dollar bonds. Investors price the whole at a discount to the sum of the pieces.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= TELECOM 101 ================= -->
+<section id="telecom101" class="wrap">
+  <div class="section-head reveal">
+    <span class="kicker blue">Telecom 101 · assume you know nothing</span>
+    <h2>How a mobile operator makes money, and why "digital operator" changes the math</h2>
+    <p class="lede">Every mobile operator is the same simple machine: customers × price per customer = revenue. The interesting parts are what it costs to run the network, how much must be reinvested each year, and what else you can sell to someone whose identity and payment relationship you already own.</p>
+  </div>
+  <div class="grid g-3-2">
+    <div class="card reveal">
+      <h3>The revenue equation</h3>
+      <p><strong>Revenue = Subscribers × ARPU.</strong> ARPU is "average revenue per user" per month. VEON's blended telecom ARPU is about $2 a month; in Kazakhstan it is ~$5, in Bangladesh ~$1. That is why 151m customers only produce ~$3.6bn of telecom revenue a year, whereas a US operator with the same customer count would produce ~$90bn.</p>
+      <div class="explain blue"><h5>Why ARPU is low and why it can still grow</h5><p>These are poor countries with cheap prepaid SIMs. ARPU grows when (1) users move from 2G/3G voice to 4G data (77% of Jazz's base is now 4G), (2) they consume more gigabytes (8.2 GB/month in Pakistan), (3) prices are raised in line with inflation, and (4) they buy bundles that include digital services. VEON explicitly prices to track <em>nominal GDP</em>: real growth plus inflation. Over 3 to 7 years inflation and currency devaluation roughly cancel out, so local price rises should protect the dollar value of revenue.</p></div>
+      <h3 style="margin-top:20px">The cost stack</h3>
+      <ul class="clean">
+        <li><strong>Cost of services (~12% of revenue):</strong> interconnect fees paid to other networks, handset costs in bundles, content licences (cricket rights for Tamasha), payment-scheme fees.</li>
+        <li><strong>Operating costs (~43%):</strong> network running costs (energy to power towers is the biggest swing item), tower rent paid to the tower companies VEON sold its towers to, staff, marketing, IT, and sector taxes. Mobile-specific taxes reach 37% of service revenue in Pakistan and 47% in Bangladesh.</li>
+        <li><strong>EBITDA (~44–46%):</strong> what is left before depreciation and interest. Telecoms report this because the network is bought upfront and depreciated over years.</li>
+        <li><strong>Capex (15–20% of revenue):</strong> new radios, fibre, spectrum licences, batteries and solar. This is cash out the door every year. <strong>EBITDA minus capex</strong> is the closest thing to true operating cash generation.</li>
+        <li><strong>Below the line:</strong> depreciation (~18%), interest on ~$3.5bn of bonds and loans (~$634m a year), a 33% tax rate, and a slice for minority shareholders (mainly the 16.4% of Kyivstar VEON does not own).</li>
+      </ul>
+    </div>
+    <div class="card reveal">
+      <h3>Interactive: build an operator</h3>
+      <p style="font-size:13px">Drag the sliders. The two presets show management's own comparison of the telecom foundation versus the digital layer.</p>
+      <div class="tabs" style="margin-top:10px"><button class="tab active" onclick="preset101('telco',this)">Telecom preset</button><button class="tab" onclick="preset101('digital',this)">Digital preset</button></div>
+      <label class="ctl"><span>Customers (millions)</span><b id="o_subs">150</b></label><input class="slider" type="range" id="i_subs" min="5" max="250" step="1" value="150" oninput="calc101()">
+      <label class="ctl"><span>ARPU per month (US$)</span><b id="o_arpu">2.00</b></label><input class="slider" type="range" id="i_arpu" min="0.25" max="10" step="0.05" value="2" oninput="calc101()">
+      <label class="ctl"><span>EBITDA margin</span><b id="o_m">45%</b></label><input class="slider" type="range" id="i_m" min="10" max="65" step="1" value="45" oninput="calc101()">
+      <label class="ctl"><span>Capex as % of revenue</span><b id="o_cx">20%</b></label><input class="slider" type="range" id="i_cx" min="2" max="35" step="1" value="20" oninput="calc101()">
+      <div class="grid g2" style="margin-top:16px">
+        <div class="stat"><div class="v" id="r_rev">$3.6bn</div><div class="l">Annual revenue</div></div>
+        <div class="stat"><div class="v" id="r_ebitda">$1.6bn</div><div class="l">EBITDA</div></div>
+        <div class="stat"><div class="v" id="r_ocf">$0.9bn</div><div class="l">EBITDA − capex</div></div>
+        <div class="stat"><div class="v" id="r_conv">25%</div><div class="l">Cash margin (EBITDA − capex) / revenue</div></div>
+      </div>
+      <div class="explain" style="margin-top:14px"><h5>Management's punchline</h5><p>Telecom: 45% margin, 20% capex → <b>25%</b> of revenue becomes cash. Digital: 36% margin, 7% capex → <b>29%</b>. So although digital has a <em>lower</em> headline EBITDA margin (and mechanically dilutes the group margin by ~0.1pp for each 1pp of mix shift), it generates <em>more</em> cash per dollar of revenue. That is the whole thesis in two numbers.</p></div>
+    </div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card reveal"><h4>What is "spectrum"?</h4><p>Radio frequencies licensed from the government, usually for 15 years, that a network needs to carry data. More spectrum = more capacity per tower. In March 2026 Jazz bought 190 MHz for ~$240m, the largest allocation in Pakistan's auction, because management says Pakistan is <strong>capacity constrained, not demand constrained</strong>: build it and usage follows.</p></div>
+    <div class="card reveal"><h4>What is a "tower sale"?</h4><p>The steel mast and the land are passive, commodity assets. Selling them to a specialist tower company and renting space back frees cash and moves the maintenance burden. VEON sold 10,500 Pakistan towers for $563m (June 2025) and 2,000 Bangladesh towers for ~$99m. Rent then shows up as a lease liability, which is why VEON quotes leverage both with and without leases.</p></div>
+    <div class="card reveal"><h4>What is a "digital operator"?</h4><p>A telecom that treats the SIM as a login and a payment method, then sells non-telecom services through it. VEON's brand for this is <strong>DO1440</strong>: engage the customer across all 1,440 minutes of the day. The network is not a legacy asset to run down; it is the cheapest customer-acquisition engine in the country, because a standalone fintech or streaming app would have to pay to find the same customers.</p></div>
+  </div>
+</section>
+
+<!-- ================= HISTORY ================= -->
+<section id="history" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Corporate history · how a Moscow telecom became a Dubai fintech holding</span>
+    <h2>Thirty-four years in one timeline</h2>
+    <p class="lede">The single most important fact about VEON's history is that until October 2023 it was a Russian company. Everything about today's discount, governance debate and re-rating potential flows from the exit.</p>
+  </div>
+  <div class="grid g2">
+    <div class="card reveal timeline" style="padding-left:40px">
+      <div class="tl"><div class="y">1992</div><div class="t">VimpelCom founded in Moscow</div><p>A pioneer of post-Soviet mobile telephony; the Beeline brand is born.</p></div>
+      <div class="tl"><div class="y">1996</div><div class="t">One of the first Russian companies on the NYSE</div><p>Moves to the tech-heavy Nasdaq in 2013.</p></div>
+      <div class="tl"><div class="y">2009–2010</div><div class="t">Merger with Kyivstar (Ukraine); acquisition of Wind Telecom</div><p>Builds a footprint from Italy and Algeria to Central and South Asia. Most of those assets were later sold.</p></div>
+      <div class="tl"><div class="y">2017</div><div class="t">Rebrands as VEON Ltd</div><p>Signals the ambition to be a digital-services provider rather than a plain telecom.</p></div>
+      <div class="tl"><div class="y">2019</div><div class="t">DO1440 digital-operator strategy launched; Kaan Terzioğlu joins as co-COO</div><p>Becomes Group CEO in 2021. Infrastructure and consumer digital services are treated as two different businesses.</p></div>
+      <div class="tl"><div class="y">Feb 2022</div><div class="t">Russia invades Ukraine</div><p>Russia was ~44% of group EBITDA in FY21. Sanctions on LetterOne's owners bar US investors from the stock and threaten a Nasdaq delisting.</p></div>
+      <div class="tl"><div class="y">Oct 2023</div><div class="t">Russia exit completed</div><p>PJSC VimpelCom sold to local management for ~RUB130bn (~$2.1bn EV), structured mainly as assumed debt: a <strong>$5.1bn net deleveraging</strong>. All sanctioned individuals removed from VEON and LetterOne roles. Kyrgyzstan also exited.</p></div>
+    </div>
+    <div class="card reveal timeline" style="padding-left:40px">
+      <div class="tl"><div class="y">Late 2024</div><div class="t">HQ moves from Amsterdam to Dubai (DIFC); Euronext listing dropped</div><p>Same-day flights to every market, cheaper talent, Gulf bank relationships. Dubai's largest Nasdaq-listed company.</p></div>
+      <div class="tl"><div class="y">Jan 2025</div><div class="t">Burak Özer appointed Group CFO; Kyivstar buys 97% of Uklon for $155m</div><p>Start of the "Pac-Man" in-market digital acquisitions.</p></div>
+      <div class="tl"><div class="y">Jun 2025</div><div class="t">Pakistan towers (Deodar, 10,500 sites) sold for $563m</div><p>High-single-digit EBITDA multiple. Books a $489m gain in 2Q25 that distorts every 2026 YoY profit comparison.</p></div>
+      <div class="tl"><div class="y">Aug 2025</div><div class="t">Kyivstar lists on Nasdaq (KYIV) via SPAC with Cohen Circle</div><p>First Ukrainian company on a US exchange. VEON sells down to 89.6%, then to 83.6% in a Feb 2026 secondary; $275m total proceeds.</p></div>
+      <div class="tl"><div class="y">Mar–May 2026</div><div class="t">190 MHz Pakistan spectrum ($240m); $1.4bn bond refinancing</div><p>$700m 6.95% 2031s and $700m 7.45% 2033s replace most of the 3.375% 2027 notes. The 2027 "maturity wall" is gone.</p></div>
+      <div class="tl"><div class="y">Jul 2026</div><div class="t">Mastercard partnership; TPL Insurance (76%) bought; guidance raised a second time</div><p>FY26 revenue growth now 15–18%, EBITDA 9–12%. Systematic buyback: cancel at least $100m of shares every year.</p></div>
+      <div class="tl"><div class="y">16 Nov 2026</div><div class="t">Capital Markets Day, New York</div><p>Medium-term targets due. Management's aspiration: digital at 50% of revenue by end-2029.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MAP ================= -->
+<section id="map-sec" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker blue">Footprint · where VEON operates</span>
+    <h2>Five countries, ~6% of the world's population, one holding company in Dubai</h2>
+    <p class="lede">Click any marker. Circle size is FY25 revenue. Colours are fixed per country throughout this dashboard so you can follow each market across every chart.</p>
+  </div>
+  <div class="grid g-3-2">
+    <div class="reveal"><div id="map"></div>
+      <div class="legend"><span><i class="dot" style="background:var(--c-pak)"></i>Pakistan · Jazz</span><span><i class="dot" style="background:var(--c-ukr)"></i>Ukraine · Kyivstar</span><span><i class="dot" style="background:var(--c-kaz)"></i>Kazakhstan · Beeline</span><span><i class="dot" style="background:var(--c-ban)"></i>Bangladesh · Banglalink</span><span><i class="dot" style="background:var(--c-uzb)"></i>Uzbekistan · Beeline</span><span><i class="dot" style="background:var(--c-hq)"></i>HQ Dubai</span><span><i class="dot" style="background:var(--c-other);opacity:.6"></i>Exited (Russia 2023, Kyrgyzstan)</span></div>
+    </div>
+    <div class="map-panel reveal" id="mapPanel">
+      <h3><i class="dot" style="background:var(--c-pak)"></i>Select a market</h3>
+      <p>The panel updates with brand, market position, customers, ARPU, 2Q26 revenue and EBITDA, digital share, currency and the key risk for that country.</p>
+      <div class="explain blue" style="margin-top:16px"><h5>Reading the footprint</h5><p>Pakistan (37% of FY25 revenue) is the growth and fintech engine. Ukraine (26%) is the highest-margin asset and the biggest geopolitical risk, but it is separately listed so you can see what the market pays for it. Kazakhstan (19%) is the richest per-capita market and the digital pioneer, currently suffering a VAT-driven margin squeeze. Bangladesh (10%) is a price-sensitive #3 player about to launch fintech. Uzbekistan (7%) is the smallest, joint-#1 in a fragmented four-player market.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COUNTRIES ================= -->
+<section id="countries" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Country by country · operating review</span>
+    <h2>Each market is a different business. Here is each one.</h2>
+  </div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card reveal"><div class="chart-title">2Q26 revenue and EBITDA by market (US$m)</div><div class="chart-sub">Pakistan produced 39% of revenue and 38% of segment EBITDA. Ukraine's margin (55%) is the highest in the group.</div><div class="chart-box"><canvas id="chSeg"></canvas></div><div class="src"><b>Source:</b> ZeroOne 2Q26 review; StoneX regional table in AlphaSense primer. Segment EBITDA sums to $574m vs group $552m; the difference is HQ costs and eliminations.</div></div>
+    <div class="card reveal"><div class="chart-title">2Q26 YoY growth in USD: revenue vs EBITDA</div><div class="chart-sub">Pakistan grew EBITDA faster than revenue (operating leverage). Kazakhstan and Bangladesh went the other way, for different reasons.</div><div class="chart-box"><canvas id="chGrowth"></canvas></div><div class="src"><b>Source:</b> ZeroOne, INAM 2Q26 reviews. Bangladesh's −44% EBITDA is against a 2Q25 base that included a $45m one-off provision release; excluding it, EBITDA grew ~13%.</div></div>
+  </div>
+  <div class="tabs reveal">
+    <button class="tab active" onclick="showTab('c-pak',this)"><i class="dot" style="background:var(--c-pak)"></i>Pakistan</button>
+    <button class="tab" onclick="showTab('c-ukr',this)"><i class="dot" style="background:var(--c-ukr)"></i>Ukraine</button>
+    <button class="tab" onclick="showTab('c-kaz',this)"><i class="dot" style="background:var(--c-kaz)"></i>Kazakhstan</button>
+    <button class="tab" onclick="showTab('c-ban',this)"><i class="dot" style="background:var(--c-ban)"></i>Bangladesh</button>
+    <button class="tab" onclick="showTab('c-uzb',this)"><i class="dot" style="background:var(--c-uzb)"></i>Uzbekistan</button>
+  </div>
+
+  <div id="c-pak" class="tabpane active card reveal">
+    <div class="grid g-1-2">
+      <div>
+        <h3>Pakistan · Jazz, JazzCash, Mobilink Bank</h3>
+        <span class="pill blue">#1 operator</span> <span class="pill bull">Growth anchor</span> <span class="pill warn">Currency: PKR</span>
+        <div class="kv"><span>FY25 revenue / EBITDA</span><b>$1,624m / $712m</b><span>2Q26 revenue (YoY)</span><b>$500m (+26.6%)</b><span>2Q26 EBITDA (margin)</span><b>$216m (43.3%)</b><span>Mobile subscribers</span><b>75.4m</b><span>4G users / penetration</span><b>58.1m / 77.1%</b><span>Data per user</span><b>8.2 GB/month</b><span>Telecom ARPU</span><b>~$1.33/month</b><span>Multiplay customers</span><b>22.9m (3.5x ARPU)</b><span>Digital share of revenue</span><b>38.7%</b><span>Digital EBITDA margin</span><b>32.3% (from 24.3%)</b><span>Run-rate revenue</span><b>~$2bn/yr</b></div>
+      </div>
+      <div>
+        <p><strong>Why it matters.</strong> Pakistan is 37% of revenue, ~35% of EBITDA and the clearest proof that the digital flywheel works. Revenue grew 26.6% against cost growth of 22.8% in 2Q26, so margin expanded 1.9pp purely from operating leverage. Management describes it as a ~$2bn revenue run-rate business with financial services alone heading past $500m this year.</p>
+        <p style="margin-top:10px"><strong>JazzCash</strong> is the largest fintech in the country: ~27.7m monthly active users, 60m+ accounts, PKR19.6tn (~$70bn) of annual gross transaction value (~16% of Pakistan's GDP), 224,000 loans issued per day, 735,000 active merchants and 1m+ Raast QR merchants. Mobilink Bank is the largest digital bank, with ~100,000 borrowers at a $2,300 average loan and a new Islamic banking arm. JazzCash now distributes government Treasury Bills in-app, and Jazz bought 76% of TPL Insurance (~$20.6m premiums) to add micro-insurance.</p>
+        <p style="margin-top:10px"><strong>Telecom runway.</strong> The 190 MHz spectrum win ($240m, 15 years) is meant to unlock capacity; 4G penetration is 77% and headed higher; a 5G roll-out is the next capex question (one expert put Pakistan 5G at ~$5bn over ten years, hard to justify at $1–2 ARPU).</p>
+        <div class="explain bear"><h5>Risks specific to Pakistan</h5><p>PKR went from 150 to ~300 per dollar between 2021 and 2023 before stabilising near 278. Sector taxes take 37% of mobile service revenue. China Mobile's local unit (Zong) has deep pockets for price wars. Power-grid fragility forces site-level solar. JazzCash's shift from payments into lending adds credit risk that is not yet visible in a downturn. A 2Q26 tax prepayment depressed quarterly equity free cash flow.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="c-ukr" class="tabpane card reveal">
+    <div class="grid g-1-2">
+      <div>
+        <h3>Ukraine · Kyivstar (Nasdaq: KYIV, 83.6% owned)</h3>
+        <span class="pill blue">#1 operator, 47% share</span> <span class="pill bull">Highest margin</span> <span class="pill bear">War zone</span> <span class="pill warn">Currency: UAH</span>
+        <div class="kv"><span>FY25 revenue / EBITDA</span><b>$1,164m / $650m</b><span>2Q26 revenue (YoY)</span><b>$341m (+19.5%)</b><span>2Q26 EBITDA (margin)</span><b>$189m (55.5%)</b><span>1H26 EBITDA</span><b>$363m (vs $309m)</b><span>Mobile subscribers</span><b>~22.5m (declining)</b><span>Telecom ARPU</span><b>~$3.82/month</b><span>Digital revenue 2Q26</span><b>$74m (+83%)</b><span>Capex intensity (3-yr avg)</span><b>&gt;25% of sales</b><span>KYIV market cap @ $13.66</span><b>~$3.15bn</b><span>VEON stake value</span><b>~$2.64bn</b></div>
+      </div>
+      <div>
+        <p><strong>Why it matters.</strong> Kyivstar is the only piece of VEON with a public price tag. At $13.66 the 83.6% stake is worth about $2.6bn, roughly 55% of VEON's entire market cap. Despite the war, revenue grew 19.5% in 2Q26 with a 55% margin: ARPU rose in local currency through repricing and higher data use even as the subscriber base shrank with the population.</p>
+        <p style="margin-top:10px"><strong>Digital build-out.</strong> Uklon (97%, $155m): Ukraine's leading ride-hailing and delivery app, 5.2m customers, 43m rides and 1.4m deliveries a quarter, $33m revenue and $13m EBITDA in 2Q26, now expanding to Uzbekistan. Tabletki.ua (~$160m, 8x EBITDA): online pharmacy marketplace with 14,000 pharmacies, $8m revenue, $6m EBITDA, $376m GMV. Helsi: healthcare platform, ~5m users (28m registered). Kyivstar TV. A sovereign Ukrainian LLM built on Google Gemma with the Ministry of Digital Transformation.</p>
+        <p style="margin-top:10px"><strong>Resilience engineering.</strong> $1.3bn invested 2023–2026 (30% above the pledge); 4G to 95% of controlled territory; 3G switched off Sept 2026 to refarm spectrum; 180 MW of solar (~30% of network electricity); 6m+ Ukrainians have used direct-to-phone Starlink via Kyivstar when towers lose power; 5G test zones in Lviv at 2.4 Gbps, commercial 5G deferred until after the war.</p>
+        <div class="explain bear"><h5>Risks specific to Ukraine</h5><p>Physical and cyber attacks on infrastructure; energy outages; population decline; and a lingering nationalisation risk because the ultimate owners of VEON's largest shareholder were once sanctioned. Edison uses a 15.5% country risk premium. Digital diversification inside Kyivstar does not diversify away from Ukraine.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="c-kaz" class="tabpane card reveal">
+    <div class="grid g-1-2">
+      <div>
+        <h3>Kazakhstan · Beeline, Simply, QazCode, OLX (pending)</h3>
+        <span class="pill blue">Co-#1, 43% share</span> <span class="pill bear">Margin squeeze</span> <span class="pill warn">Currency: KZT</span>
+        <div class="kv"><span>FY25 revenue / EBITDA</span><b>$816m / $408m</b><span>2Q26 revenue (YoY USD / LCY)</span><b>$226m (+12.2% / +4%)</b><span>2Q26 EBITDA (margin)</span><b>$89m (39.4%, −10.2pp)</b><span>2Q25 margin</span><b>49.6%</b><span>Mobile subscribers</span><b>~11.7m</b><span>Telecom ARPU</span><b>~$5.04/month (highest)</b><span>Simply digital card users</span><b>5.3m</b><span>Share of group revenue</span><b>~18%</b></div>
+      </div>
+      <div>
+        <p><strong>Why it matters.</strong> Kazakhstan is the richest market per head and the most digitally mature: Beeline launched Simply (a mobile-only neobank card), QazCode built Kaz-LLM (Kazakh/Turkish/English/Russian), and it is buying OLX Kazakhstan (10m monthly users of classifieds) for $75m, pending approval. It is also the group's current problem child.</p>
+        <p style="margin-top:10px"><strong>The margin squeeze, decomposed.</strong> VAT rose from 12% to 16% in early 2026 and was <em>not</em> passed to customers because subscriber momentum was slowing; on ZeroOne's arithmetic that is ~2pp of the 10.2pp margin drop and is permanent until prices move. Family bundles that include smartphones book low-margin handset revenue upfront while the high-margin service revenue is recognised over the contract, a timing effect that unwinds. Personnel, utilities, IT and marketing inflation make up the rest. At 18% of group revenue, a 10pp segment squeeze costs the group ~1.8pp of margin. Management calls it temporary; the pace of Kazakh pricing in 2H26 is the single most-watched operational item.</p>
+        <div class="explain bear"><h5>Risks specific to Kazakhstan</h5><p>State-owned Kazakhtelecom sits close to the regulator and subsidies. KZT swung from 440 to 540 per dollar in 2025 before recovering to ~487. The peer Kcell trades at ~8x EBITDA, which is what makes Beeline's implied valuation inside VEON look so low.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="c-ban" class="tabpane card reveal">
+    <div class="grid g-1-2">
+      <div>
+        <h3>Bangladesh · Banglalink, Toffee, Mukto Pay</h3>
+        <span class="pill warn">#3 operator, 20% share</span> <span class="pill bull">Fintech launch 3Q26</span> <span class="pill warn">Currency: BDT</span>
+        <div class="kv"><span>FY25 revenue / EBITDA</span><b>$460m / $226m</b><span>2Q26 revenue (YoY)</span><b>$120m (+2.6%)</b><span>2Q26 EBITDA (margin)</span><b>$49m (40.8%)</b><span>Underlying EBITDA growth</span><b>~+13% ex provision</b><span>Mobile subscribers</span><b>~34m (declining)</b><span>Telecom ARPU</span><b>~$1.03/month (lowest)</b><span>Toffee streaming users</span><b>9.5m</b><span>Digital share of revenue</span><b>14% (tripled)</b><span>Committed investment</span><b>$250m initial</b></div>
+      </div>
+      <div>
+        <p><strong>Why it matters.</strong> Bangladesh is the one market where VEON is a challenger: Grameenphone (Telenor) holds 45% with a 60% EBITDA margin, Robi Axiata 31%, Banglalink 20%. It competes on price, youth branding and internet speed, which makes it the most exposed to inflation and energy shocks. Fuel and power shortages linked to the Strait of Hormuz crisis cut national mobile data use by ~15% in April–May 2026 in a market that usually grows 40% a year.</p>
+        <p style="margin-top:10px"><strong>The catalyst.</strong> Bangladesh Bank approved Mukto Pay, Banglalink's payment-service-provider platform, in August 2026 with a September launch: P2P transfers, bill pay, merchant payments. This is the attempt to copy the JazzCash playbook (payments first, then lending) in a country of 170m with a large unbanked population. Brokers value Banglalink at ~3x EBITDA versus Grameenphone's 4x.</p>
+        <div class="explain bear"><h5>Risks specific to Bangladesh</h5><p>A BTRC audit claim of BDT8.2bn (BDT4.3bn of it disputed interest). SIM taxes raised from BDT200 to 300 and supplementary duty from 20% to 23%, taking the margin from 37.5% in FY23 to 34.8% in FY24. Sector taxes reach 47% of service revenue. Political transition and consumer unfamiliarity with digital and AI products.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="c-uzb" class="tabpane card reveal">
+    <div class="grid g-1-2">
+      <div>
+        <h3>Uzbekistan · Beeline, Beepul, Tashkent IT Park</h3>
+        <span class="pill blue">Joint #1, 21% share</span> <span class="pill mute">Smallest market</span> <span class="pill warn">Currency: UZS</span>
+        <div class="kv"><span>FY25 revenue / EBITDA</span><b>$308m / $115m</b><span>2Q26 revenue (YoY USD / LCY)</span><b>$84m (+12.2% / +5%)</b><span>2Q26 EBITDA (margin)</span><b>$31m (36.9%)</b><span>Mobile subscribers</span><b>~7.6–7.9m</b><span>Multiplay penetration</span><b>46%</b><span>Telecom ARPU</span><b>~$2.84–3.50/month</b><span>Beepul monthly TPV</span><b>$150m</b><span>Digital share of revenue</span><b>~25% (FY26E)</b></div>
+      </div>
+      <div>
+        <p><strong>Why it matters.</strong> Small but strategically useful: growth is ARPU-led rather than subscriber-led as customers migrate to multiplay bundles, Beepul is scaling merchant payments, Uklon's ride-hailing has been exported here from Ukraine, and the Tashkent IT Park houses 2,000+ of VEON's digital engineers. VEON is pursuing a banking licence and a ~$200m acquisition of Perfectum for spectrum synergies.</p>
+        <div class="explain bear"><h5>Risks specific to Uzbekistan</h5><p>Four operators with 21–33% shares each, including state-backed brands and oligarch-funded holdings willing to spend heavily. Lowest margin in the group (~37%) with rising service-delivery, distribution and utility costs.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card reveal" style="margin-top:16px">
+    <div class="chart-title">Customers and monthly telecom ARPU by market (FY25 averages)</div><div class="chart-sub">Bars are subscribers (millions). ARPU is shown as labels because putting two different scales on one axis is misleading.</div>
+    <div class="chart-box short"><canvas id="chSubs"></canvas></div>
+    <div class="src"><b>Source:</b> ZeroOne financial model (average telco users, annual USD ARPU ÷ 12). Total ~150m average users in FY25; Jazz alone is nearly half.</div>
+  </div>
+</section>
+
+<!-- ================= FLYWHEEL ================= -->
+<section id="model" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Business model · the flywheel</span>
+    <h2>Connectivity is the distribution moat. Digital is the margin and the growth.</h2>
+    <p class="lede">Management's word for it is the "Flywheel". Each turn lowers the cost of acquiring the next digital customer and produces data that makes the next loan safer.</p>
+  </div>
+  <div class="flow reveal">
+    <div class="step"><div class="n">1</div><b>Connectivity</b><small>151m SIMs. Authenticated identity, billing relationship, physical retail, trusted local brand.</small></div>
+    <div class="step"><div class="n">2</div><b>Distribution</b><small>Push a wallet, TV app or ride app to an existing customer for near-zero acquisition cost.</small></div>
+    <div class="step"><div class="n">3</div><b>Engagement</b><small>45.3m multiplay customers use telecom plus at least one digital service. They churn less and use more data.</small></div>
+    <div class="step"><div class="n">4</div><b>Data</b><small>Payment and usage history feeds credit scoring: 224k nano-loans a day in Pakistan.</small></div>
+    <div class="step"><div class="n">5</div><b>Monetisation</b><small>Multiplay ARPU ~4x voice-only. Digital revenue +54% at 36% margin, 7% capex.</small></div>
+    <div class="step"><div class="n">6</div><b>Reinvest</b><small>Cash funds spectrum, digital M&amp;A, buybacks. 76m digital-only users now come in without a SIM at all.</small></div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card reveal"><div class="chart-title">Digital share of group revenue: history and forecasts</div><div class="chart-sub">Actuals through 2Q26, then ZeroOne's model. Management's aspiration is 50% by end-2029.</div><div class="chart-box"><canvas id="chMix"></canvas></div><div class="src"><b>Source:</b> StoneX (FY24 11.5%), VEON annual report (FY25 17.3%), ZeroOne (2Q25 20.5%, 2Q26 26.9%, FY26E–FY30E). StoneX's conservative organic model reaches ~33% by 2030; the 50% target implies more M&amp;A.</div></div>
+    <div class="card reveal"><div class="chart-title">Unit economics: telecom vs digital (per $100 of revenue)</div><div class="chart-sub">Stacked: EBITDA is split into capex and cash retained; the rest is operating cost.</div><div class="chart-box"><canvas id="chUnit"></canvas></div><div class="src"><b>Source:</b> Management comparison on the 31 Jul 2026 call, via ZeroOne and Baptista. Digital's original plan assumed a 20–25% margin; it is running at 36%.</div></div>
+    <div class="card reveal"><div class="chart-title">Users by type, 2Q26 (millions)</div><div class="chart-sub">Digital users exceed telecom customers because 76m people use VEON apps without a VEON SIM.</div><div class="chart-box"><canvas id="chUsers"></canvas></div><div class="src"><b>Source:</b> INAM, ZeroOne, Baptista 2Q26. Financial-services active users 58.8m (down from 61.2m in 1Q26 as monetisation outpaced user growth); entertainment 93.2m.</div></div>
+  </div>
+</section>
+
+<!-- ================= DIGITAL ================= -->
+<section id="digital" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker bull">Digital deep dive · the "hidden value"</span>
+    <h2>$342m a quarter, growing 54%, at a 36% margin</h2>
+    <p class="lede">VEON reports digital in three verticals. Financial Services is the largest and most valuable. Digital Life grows fastest (partly through acquisitions). Digital Enterprise is small but doubling outside its legacy identity business.</p>
+  </div>
+  <div class="grid g-2-1">
+    <div class="card reveal"><div class="chart-title">2Q26 digital revenue by vertical and sub-vertical (US$m)</div><div class="chart-sub">Total $342m. Financial services 44%, Digital Life 35%, Digital Enterprise 21%.</div><div class="chart-box tall"><canvas id="chDig"></canvas></div><div class="src"><b>Source:</b> INAM and ZeroOne 2Q26 reviews. Growth YoY: financial services +48.5%, entertainment +95.6%, ride-hailing +50.8%, premium brands +90%, healthcare +477%, enterprise +25.5% (identity flat at $43m; other enterprise ~doubled to ~$29m).</div></div>
+    <div class="card reveal">
+      <h3>Digital P&amp;L snapshot, 2Q26</h3>
+      <div class="kv"><span>Digital revenue</span><b>$342m (+53.6%)</b><span>Digital EBITDA</span><b>$124m (+66.2%)</b><span>Digital EBITDA margin</span><b>36.1% (33.4%)</b><span>Digital capex / revenue</span><b>~7%</b><span>1H26 digital revenue</span><b>$644m (+55.5%)</b><span>Active digital users</span><b>227.7m</b><span>Super-app users</span><b>65m+</b><span>Digital-only users</span><b>76m</b><span>Multiplay customers</span><b>45.3m</b><span>Multiplay ARPU uplift</span><b>~4.0x voice-only</b></div>
+      <div class="explain"><h5>The reporting quirk that understates digital</h5><p>When a Tamasha or JazzCash customer buys more mobile data because of the app, that extra revenue is booked under telecom, not digital. Management says this makes the 26.9% figure a conservative measure of digital's economic influence.</p></div>
+    </div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card reveal"><h4>Financial services · $151m/qtr</h4>
+      <ul class="clean bull">
+        <li><strong>JazzCash (Pakistan):</strong> 27.7m MAU, ~$70bn GTV, 224k loans/day, 735k merchants. Annualised revenue ~$475–522m and EBITDA approaching $150m, growing ~50% in local currency (Northland; Baptista annualisation of 1H26 $261m).</li>
+        <li><strong>Mobilink Microfinance Bank:</strong> Pakistan's largest digital bank; ~100k borrowers; Islamic banking launched; T-Bills in the app.</li>
+        <li><strong>Simply (Kazakhstan):</strong> mobile-only neobank card, 5.3m customers.</li>
+        <li><strong>Beepul (Uzbekistan):</strong> $150m monthly transaction volume, expanding to merchants.</li>
+        <li><strong>Mukto Pay (Bangladesh):</strong> PSP licence Aug 2026, launching 3Q26.</li>
+        <li><strong>Mastercard (Jul 2026):</strong> wallets, AI credit scoring, remittances across four markets; pilots start in Ukraine and Kazakhstan.</li>
+      </ul></div>
+    <div class="card reveal"><h4>Digital Life · $119m/qtr</h4>
+      <ul class="clean">
+        <li><strong>Entertainment $45m:</strong> Tamasha (Pakistan, 18m subscribers, 50+ advertisers, cricket rights), Toffee (Bangladesh, 9.5m), Kyivstar TV, BeeTV, KINOM.</li>
+        <li><strong>Ride-hailing $33m:</strong> Uklon (Ukraine → Uzbekistan), 37% EBITDA margin, Uklon Store for in-app commerce, E-wings e-scooters pending.</li>
+        <li><strong>Premium digital brands $28m:</strong> ROX, SIMOSA, ZARR, RYZE lifestyle sub-brands aimed at youth.</li>
+        <li><strong>Healthcare $10m:</strong> Helsi (~5m users), Tabletki.ua (14,000 pharmacies), ApnaClinic, Hambi Davo.</li>
+        <li><strong>Marketplaces:</strong> OLX Kazakhstan ($75m, pending), BeeMarket electronics.</li>
+      </ul></div>
+    <div class="card reveal"><h4>Digital Enterprise · $72m/qtr</h4>
+      <ul class="clean blue">
+        <li><strong>Identity &amp; credentials $43m:</strong> legacy, flat; KYC and SIM-registration services sold to banks and government.</li>
+        <li><strong>AI, cloud, data, adtech ~$29m:</strong> nearly doubled. Garaj and BCloud (cloud), Adwisor (adtech), QazCode.</li>
+        <li><strong>Sovereign LLMs:</strong> Kaz-LLM live; Ukrainian LLM on Google Gemma with the WINWIN AI Centre; Urdu (with MeetKai), Bengali and Uzbek models queued. Addressable population ~600m. Monetisation ideas: $2/month or $0.50/transaction across 65m super-app users. 77 "AI First" initiatives touching 30m+ customer touchpoints.</li>
+        <li><strong>Data centres:</strong> MoU with Ukraine's Ministry of Economy for a sovereign AI-ready data centre.</li>
+      </ul></div>
+  </div>
+  <div class="card reveal" style="margin-top:16px">
+    <div class="chart-title">The "Pac-Man" acquisition record: buying local leaders and plugging them into the network</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Date</th><th>Target</th><th>Country</th><th>Role</th><th class="num">Value ($m)</th><th>Valuation</th><th>Rationale</th></tr>
+      <tr><td>Jan 2025</td><td>Uklon (97%)</td><td>Ukraine</td><td>Buy</td><td class="num">155</td><td>~1.7x annualised revenue</td><td>Ride-hailing and delivery; $33m rev, $13m EBITDA per quarter today</td></tr>
+      <tr><td>Jun 2025</td><td>Deodar towers (10,500)</td><td>Pakistan</td><td>Sell</td><td class="num">563</td><td>High-single-digit EBITDA multiple</td><td>Asset-light; $489m gain</td></tr>
+      <tr><td>Aug 2025</td><td>Kyivstar SPAC listing</td><td>Ukraine</td><td>List</td><td class="num">2,210 EV</td><td>$10.00/share</td><td>Value crystallisation; $135m proceeds</td></tr>
+      <tr><td>2025</td><td>TNS-Plus (49%)</td><td>Kazakhstan</td><td>Sell</td><td class="num">137.5</td><td>—</td><td>Satellite and network-design unit</td></tr>
+      <tr><td>Oct 2025</td><td>OLX Kazakhstan (100%)</td><td>Kazakhstan</td><td>Buy (pending)</td><td class="num">75</td><td>—</td><td>Classifieds, 10m MAU, adtech</td></tr>
+      <tr><td>Feb 2026</td><td>Tabletki.ua</td><td>Ukraine</td><td>Buy</td><td class="num">160</td><td>8x LTM EBITDA ($24m)</td><td>Online pharmacy marketplace</td></tr>
+      <tr><td>Feb 2026</td><td>Kyivstar secondary (14.4m sh)</td><td>Ukraine</td><td>Sell</td><td class="num">140</td><td>$10.50/share</td><td>Stake 89.6% → 83.6%</td></tr>
+      <tr><td>Jul 2026</td><td>Solar plants, 105 MW</td><td>Ukraine</td><td>Buy</td><td class="num">80.8</td><td>—</td><td>Energy independence, 180 MW total</td></tr>
+      <tr><td>Jul 2026</td><td>TPL Insurance (76.3%)</td><td>Pakistan</td><td>Buy</td><td class="num">16.4</td><td>0.36x EV/revenue</td><td>Micro-insurance into JazzCash</td></tr>
+    </table></div>
+    <div class="src"><b>Source:</b> AlphaSense primer (FactSet M&amp;A screener), Auerbach Grayson, INAM, ZeroOne. Management's stated discipline: at ~3.5x EBITDA, buying its own shares beats most external M&amp;A; only in-market deals with clear synergies qualify.</div>
+  </div>
+</section>
+
+<!-- ================= DRIVERS ================= -->
+<section id="drivers" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Revenue and cost drivers · what actually moves the numbers</span>
+    <h2>Six revenue levers, six cost levers, two translation effects</h2>
+  </div>
+  <div class="grid g2">
+    <div class="card reveal"><h3>Revenue drivers (ranked by impact)</h3>
+      <ul class="clean bull">
+        <li><strong>1. Local-currency price increases tracking nominal GDP.</strong> Weighted inflation across markets is ~9.5%; VEON reprices to match. This is the largest single driver of the 17% growth. Telecom ARPU rose 17% YoY in 2Q26.</li>
+        <li><strong>2. Digital vertical growth.</strong> $342m growing 54%: financial services (loans per day, GTV, merchant fees, interest), entertainment (subscriptions, ads), ride-hailing (take rate), healthcare GMV. Contributed ~11 of the 17 points of group growth.</li>
+        <li><strong>3. Data monetisation.</strong> 4G migration (77% in Pakistan), GB per user (8.2), multiplay bundles (45.3m customers at ~4x ARPU).</li>
+        <li><strong>4. Subscriber growth.</strong> Modest: +2–3% in Pakistan and Kazakhstan; declines in Ukraine (population), Bangladesh (competition) and Uzbekistan. ZeroOne models +1.9% group.</li>
+        <li><strong>5. M&amp;A consolidation.</strong> Uklon and Tabletki added ~$41m of 2Q26 revenue; OLX next.</li>
+        <li><strong>6. Enterprise and adjacent.</strong> Identity services, cloud, adtech, sovereign AI, satellite distribution: small today, optional upside.</li>
+      </ul></div>
+    <div class="card reveal"><h3>Cost drivers (ranked by volatility)</h3>
+      <ul class="clean bear">
+        <li><strong>1. Energy.</strong> Diesel and grid power for tens of thousands of sites. Oil at $90–120 in the Hormuz crisis adds 2–9% inflation to non-producing markets; outages cut usage. Response: 180 MW solar in Ukraine, site-level solar in South Asia.</li>
+        <li><strong>2. Taxes and regulation.</strong> Kazakhstan VAT 12→16% (not passed through); Bangladesh SIM tax and duty rises; 37%/47% sector tax burdens; BTRC claim. These hit margin instantly and reverse only via pricing.</li>
+        <li><strong>3. Personnel, IT and marketing inflation.</strong> Wages track the same 9.5% inflation; digital launches need marketing; content rights (cricket) are dollar-priced.</li>
+        <li><strong>4. Tower leases.</strong> After the tower sales, rent replaces maintenance: ~$1.86bn of lease liabilities. Lower EBITDA volatility, but a fixed cash outflow below EBITDA.</li>
+        <li><strong>5. Credit provisioning.</strong> As JazzCash lends more, expected-loss charges become a real cost line inside financial-services margin (which still expanded to 32.3%).</li>
+        <li><strong>6. Interest and D&amp;A.</strong> ~$634m net interest modelled; new bonds add ~$40m from 2027. D&amp;A ~$900m, rising with spectrum.</li>
+      </ul></div>
+  </div>
+  <div class="grid g-1-2" style="margin-top:16px">
+    <div class="card reveal"><h3>Two translation effects to keep separate</h3>
+      <div class="explain blue"><h5>FX translation</h5><p>Revenue is earned in PKR, UAH, KZT, BDT and UZS and reported in USD. A 4% blended devaluation was assumed for 2026 guidance; it is running ~3pp better. Kazakhstan grew 12% in USD but only 4% in tenge in 2Q26 because the currency strengthened.</p></div>
+      <div class="explain blue"><h5>One-offs in the comparison base</h5><p>2Q25 contained a $489m tower gain and a $45m Bangladesh provision release (worth 4.1pp of group margin). 2Q26 contained a $21m fair-value loss on Kyivstar warrants. Adjusted for those, group margin fell only 0.3pp and like-for-like EPS rose 88%.</p></div>
+    </div>
+    <div class="card reveal"><div class="chart-title">Where each $100 of FY25 revenue went</div><div class="chart-sub">From ZeroOne's model of VEON's reported P&amp;L. Other operating gains (+$251m, mostly the tower disposal) are excluded so the bars show the recurring structure.</div><div class="chart-box"><canvas id="chCost"></canvas></div><div class="src"><b>Source:</b> ZeroOne financial model, FY25: revenue $4,399m; COGS $526m; SG&amp;A $1,883m; D&amp;A $802m; net interest, FX and other non-operating $654m; tax $194m; minorities $59m; attributable profit $532m.</div></div>
+  </div>
+</section>
+
+<!-- ================= FINANCIALS ================= -->
+<section id="financials" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Financials · history, run-rate, forecasts</span>
+    <h2>Revenue up 40% in three years, cash flow turned positive, guidance raised twice</h2>
+  </div>
+  <div class="grid g2">
+    <div class="card reveal"><div class="chart-title">Annual revenue and EBITDA, FY22–FY30E (US$m)</div><div class="chart-sub">FY22–FY25 actual (continuing operations, ex-Russia); FY26E onward ZeroOne model.</div><div class="chart-box tall"><canvas id="chAnnual"></canvas></div><div class="src"><b>Source:</b> ZeroOne financial model (11 Aug 2026). FY26E $5,150m / $2,235m sits in the upper half of guidance ($5.06–5.19bn revenue; $2.19–2.25bn EBITDA). Baptista is more conservative at $5,071m / $2,199m; Litchfield $5,103m.</div></div>
+    <div class="card reveal"><div class="chart-title">Quarterly revenue and adjusted EBITDA (US$m)</div><div class="chart-sub">Five straight quarters of sequential revenue growth; margin stable at ~43% since 1Q26.</div><div class="chart-box tall"><canvas id="chQtr"></canvas></div><div class="src"><b>Source:</b> Baptista Research quarterly tables; ZeroOne. 2Q25 EBITDA of $520m included the $45m Bangladesh release.</div></div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card reveal"><div class="chart-title">Operating cash flow, capex and free cash flow (US$m)</div><div class="chart-sub">FY22–23 include Russia. FY26E–28E are Baptista forecasts.</div><div class="chart-box"><canvas id="chCF"></canvas></div><div class="src"><b>Source:</b> Baptista Research (standardised FCF = OCF − capex). VEON's own "equity FCF after leases and licences" was $134m FY23, $124m FY24, $624m FY25, $320m 1H26.</div></div>
+    <div class="card reveal"><div class="chart-title">FY26 guidance progression</div><div class="chart-sub">Raised twice; the second raise was called "mainly organic".</div>
+      <div class="tbl-wrap"><table><tr><th></th><th class="num">Initial</th><th class="num">After 1Q26</th><th class="num">After 2Q26</th></tr>
+      <tr><td>Revenue growth (USD)</td><td class="num">9–12%</td><td class="num">11–14%</td><td class="num"><b style="color:var(--bull)">15–18%</b></td></tr>
+      <tr><td>EBITDA growth (USD)</td><td class="num">7–10%</td><td class="num">7–10%</td><td class="num"><b style="color:var(--bull)">9–12%</b></td></tr>
+      <tr><td>Capex intensity ex-Ukraine</td><td class="num">14–16%</td><td class="num">15–17%</td><td class="num">15–17%</td></tr>
+      <tr><td>1H26 delivered</td><td class="num"></td><td class="num"></td><td class="num">+17% / +12%</td></tr></table></div>
+      <div class="explain" style="margin-top:12px"><h5>What the raise implies</h5><p>2H26 revenue of ~$2.68bn (+17%) and EBITDA of ~$1.17bn at a 43.5% margin, versus 43.2% in 1H. No recovery assumed, but little room for a Kazakhstan slip or a currency shock.</p></div>
+      <div class="src"><b>Source:</b> ZeroOne Exhibit 6; management call 31 Jul 2026.</div></div>
+    <div class="card reveal"><div class="chart-title">FY26E by market (Baptista) and ZeroOne segment forecasts</div>
+      <div class="tbl-wrap"><table><tr><th>Market</th><th class="num">FY26E rev</th><th class="num">FY26E EBITDA</th><th class="num">Margin</th><th class="num">ZeroOne FY28E rev</th></tr>
+      <tr><td><i class="dot" style="background:var(--c-pak)"></i>Pakistan</td><td class="num">2,000</td><td class="num">880</td><td class="num">44.0%</td><td class="num">2,530</td></tr>
+      <tr><td><i class="dot" style="background:var(--c-ukr)"></i>Ukraine</td><td class="num">1,370</td><td class="num">740</td><td class="num">54.0%</td><td class="num">1,675</td></tr>
+      <tr><td><i class="dot" style="background:var(--c-kaz)"></i>Kazakhstan</td><td class="num">890</td><td class="num">369</td><td class="num">41.5%</td><td class="num">1,103</td></tr>
+      <tr><td><i class="dot" style="background:var(--c-ban)"></i>Bangladesh</td><td class="num">478</td><td class="num">194</td><td class="num">40.5%</td><td class="num">528</td></tr>
+      <tr><td><i class="dot" style="background:var(--c-uzb)"></i>Uzbekistan</td><td class="num">333</td><td class="num">122</td><td class="num">36.5%</td><td class="num">407</td></tr>
+      <tr><td>HQ &amp; eliminations</td><td class="num">—</td><td class="num">(106)</td><td class="num"></td><td class="num"></td></tr>
+      <tr><td><b>Group</b></td><td class="num"><b>5,071</b></td><td class="num"><b>2,199</b></td><td class="num"><b>43.4%</b></td><td class="num"><b>6,244</b></td></tr></table></div>
+      <div class="src"><b>Source:</b> Baptista Research FY26E market build; ZeroOne segment revenue forecasts. Pakistan digital is modelled by ZeroOne to grow 56% in FY26 then 25%/22%/19%/17%.</div></div>
+  </div>
+  <div class="card reveal" style="margin-top:16px">
+    <div class="chart-title">Consolidated model summary (ZeroOne, US$m)</div>
+    <div class="tbl-wrap"><table>
+      <tr><th></th><th class="num">FY22</th><th class="num">FY23</th><th class="num">FY24</th><th class="num">FY25</th><th class="num">FY26E</th><th class="num">FY27E</th><th class="num">FY28E</th><th class="num">FY30E</th></tr>
+      <tr><td>Revenue</td><td class="num">3,755</td><td class="num">3,698</td><td class="num">4,004</td><td class="num">4,399</td><td class="num">5,150</td><td class="num">5,675</td><td class="num">6,244</td><td class="num">7,478</td></tr>
+      <tr><td>Growth</td><td class="num"></td><td class="num">−1.5%</td><td class="num">8.3%</td><td class="num">9.9%</td><td class="num">17.1%</td><td class="num">10.2%</td><td class="num">10.0%</td><td class="num">9.3%</td></tr>
+      <tr><td>EBITDA</td><td class="num">1,834</td><td class="num">1,664</td><td class="num">1,838</td><td class="num">2,009</td><td class="num">2,235</td><td class="num">2,470</td><td class="num">2,730</td><td class="num">3,268</td></tr>
+      <tr><td>EBITDA margin</td><td class="num">48.8%</td><td class="num">45.0%</td><td class="num">45.9%</td><td class="num">45.7%</td><td class="num">43.4%</td><td class="num">43.5%</td><td class="num">43.7%</td><td class="num">43.7%</td></tr>
+      <tr><td>EBIT</td><td class="num">1,163</td><td class="num">929</td><td class="num">1,110</td><td class="num">1,439</td><td class="num">1,333</td><td class="num">1,606</td><td class="num">1,769</td><td class="num">2,325</td></tr>
+      <tr><td>Attributable net profit</td><td class="num">(162)</td><td class="num">(2,528)</td><td class="num">415</td><td class="num">532</td><td class="num">469</td><td class="num">630</td><td class="num">726</td><td class="num">1,054</td></tr>
+      <tr><td>EPS per ADS ($)</td><td class="num"></td><td class="num">(35.99)</td><td class="num">5.73</td><td class="num">7.41</td><td class="num">6.51</td><td class="num">8.74</td><td class="num">10.08</td><td class="num"></td></tr>
+      <tr><td>Capex</td><td class="num">634</td><td class="num">531</td><td class="num">627</td><td class="num">733</td><td class="num">747</td><td class="num">823</td><td class="num">874</td><td class="num">1,047</td></tr>
+      <tr><td>Cash</td><td class="num">3,107</td><td class="num">1,902</td><td class="num">1,689</td><td class="num">1,732</td><td class="num">2,350</td><td class="num">3,002</td><td class="num">3,785</td><td class="num">5,082</td></tr>
+      <tr><td>Total debt (incl. leases)</td><td class="num">7,374</td><td class="num">5,156</td><td class="num">4,694</td><td class="num">5,145</td><td class="num">5,145</td><td class="num">5,145</td><td class="num">5,145</td><td class="num">5,145</td></tr>
+    </table></div>
+    <div class="src"><b>Source:</b> ZeroOne financial model (ReportFSOutput). FY23 loss reflects the Russia disposal and currency-translation recycling. The FY26E EPS dip versus FY25 is because FY25 included $241m of disposal gains. The model holds debt flat and accumulates cash; it does not model buybacks or dividends before FY30.</div>
+  </div>
+</section>
+
+<!-- ================= FX & MACRO ================= -->
+<section id="fx" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker warn">FX and macro · the single largest execution risk</span>
+    <h2>Five soft currencies, one hard reporting currency</h2>
+    <p class="lede">A former VEON director called currency and inflation volatility "the single largest risk" to the strategy. The mechanism is simple: costs (wages, energy, dollar-priced equipment and content, dollar bond coupons) inflate immediately, while prices can only be raised in steps. If a currency devalues faster than domestic inflation, dollar margins compress and cash is harder to move to Dubai.</p>
+  </div>
+  <div class="grid g2">
+    <div class="card reveal">
+      <h3>Interactive: flex local growth and devaluation, see the USD outcome</h3>
+      <p style="font-size:13px">Starts from ZeroOne's FY26E by market. Change local-currency revenue growth and currency depreciation per country, and how much of cost inflation gets passed through to prices. Output is compared with management's FY26 guidance.</p>
+      <div id="fxControls" style="margin-top:12px"></div>
+      <label class="ctl" style="margin-top:14px"><span>Share of cost inflation NOT passed through (margin drag, pp)</span><b id="o_pass">0.0</b></label><input class="slider" type="range" id="i_pass" min="0" max="5" step="0.1" value="0" oninput="calcFX()">
+      <button class="tab" style="margin-top:10px" onclick="resetFX()">Reset to base case</button>
+    </div>
+    <div>
+      <div class="grid g2">
+        <div class="stat"><div class="v" id="fx_rev">$5,150m</div><div class="l">FY26E revenue (USD)</div><div class="s" id="fx_rev_g">+17.1% vs FY25 · guide 15–18%</div></div>
+        <div class="stat"><div class="v" id="fx_ebitda">$2,235m</div><div class="l">FY26E EBITDA (USD)</div><div class="s" id="fx_ebitda_g">+11.2% vs FY25 · guide 9–12%</div></div>
+      </div>
+      <div class="card reveal" style="margin-top:12px"><div class="chart-title">USD EBITDA by market under your assumptions vs base (US$m)</div><div class="chart-box"><canvas id="chFX"></canvas></div></div>
+      <div class="explain warn" style="margin-top:12px;border-color:var(--warn);background:rgba(245,158,11,0.05)"><h5 style="color:var(--warn)">How to read it</h5><p>USD growth ≈ (1 + local growth) ÷ (1 + depreciation) − 1. A 10% devaluation in PKR with unchanged local growth removes roughly $180m of USD revenue and $80m of EBITDA. Guidance assumed 4% blended depreciation; through 2Q26 it was running ~3pp better, and weighted inflation was revised up from 8% to 9.5%, which is why revenue guidance rose.</p></div>
+    </div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card reveal"><div class="chart-title">Currency history: units per US$ (indexed, early 2021 = 100)</div><div class="chart-sub">Higher = weaker currency. Points are levels cited in the source reports.</div><div class="chart-box"><canvas id="chFXhist"></canvas></div><div class="src"><b>Source:</b> Northland via AlphaSense: PKR 150 (early 2021) → ~300 (late 2023) → ~278 (2025); KZT 440 → 540 (CY25) → 487. UAH, BDT and UZS levels are illustrative context from public data, not from the folder.</div></div>
+    <div class="card reveal"><h3>Macro assumptions in guidance</h3>
+      <div class="kv"><span>Blended currency depreciation assumed</span><b>4%</b><span>Actual through 1H26</span><b>~1% (3pp better)</b><span>Weighted inflation, 4Q25 view</span><b>8.4%</b><span>Weighted inflation, 2Q26 view</span><b>~9.5%</b><span>Pricing policy</span><b>Track nominal GDP</b><span>Country risk premium: Ukraine</span><b>15.5%</b><span>Country risk premium: Pakistan</span><b>9.7%</b><span>Litchfield discount rate</span><b>16%</b></div>
+      <div class="explain blue"><h5>Hyperinflation accounting</h5><p>In markets deemed hyperinflationary, IAS 29 restates non-monetary items for purchasing power before translating to dollars. It creates non-cash noise in equity and comparability, which is one more reason brokers value the parts rather than the consolidated earnings line.</p></div>
+    </div>
+    <div class="card reveal"><h3>Cash upstreaming: from opco to Dubai</h3>
+      <p>The bonds are at the Dubai holding company (and a MidCo); the cash is earned in the operating companies. Getting it up requires dividends, management fees or intercompany loans, subject to local capital controls, withholding taxes and, in Ukraine, wartime restrictions.</p>
+      <div class="kv"><span>Group cash, 30 Jun 2026</span><b>$2,193m</b><span>of which at HQ</span><b>$968m</b><span>Opco EBITDA available</span><b>~$2.0bn</b><span>HQ debt duration after refi</span><b>4.7 years</b></div>
+      <p style="margin-top:8px">The $1.4bn bond issue lifted HQ cash from ~$468m to ~$968m; part of the discrepancy between broker figures is definitional. Ukraine sits with net cash of ~$164m that Baptista excludes from residual debt.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GEOPOLITICS ================= -->
+<section id="geo" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker bear">Geopolitics and sovereign risk · heat map</span>
+    <h2>Where the discount comes from</h2>
+    <p class="lede">Scores are this dashboard's synthesis of the source reports on a 1 (low) to 5 (severe) scale. Hover a cell for the reason.</p>
+  </div>
+  <div class="card reveal">
+    <div class="heat" id="heat"></div>
+    <div class="src" style="margin-top:14px"><b>Basis:</b> AlphaSense bull/bear and primer, Baptista risk section, ZeroOne, INAM, expert calls. Sovereign risk premia (Edison): Ukraine 15.5%, Pakistan 9.7%. Middle East tensions and the Hormuz oil spike have triggered sudden VEON sell-offs historically.</div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card reveal"><h4>Ukraine · war</h4><p>Infrastructure is a target for physical and cyber attack; capex intensity above 25% for three years; grid outages force batteries, solar and Starlink. The bull framing: a settlement would cut the country risk premium and unlock reconstruction demand, and KYIV is the liquid way to play that. Nationalisation risk persists because of the historical UBO link to Russia, even though Ukraine has strong incentives to protect minority investors.</p></div>
+    <div class="card reveal"><h4>Pakistan · macro and politics</h4><p>IMF-programme economy; PKR halved against the dollar 2021–23; fragile grid; sector taxation at 37% of service revenue; a well-funded Chinese-owned competitor. Offsetting: the largest, fastest-growing digital ecosystem in the group and a government keen on financial inclusion (Raast payment rails).</p></div>
+    <div class="card reveal"><h4>Ownership · the LetterOne overhang</h4><p>LetterOne held ~56% before the Russia exit and 45.46% at end-2025, transferred in Dec 2025 to L1 Shareholding via internal reorganisation. Its ultimate beneficial owners (Fridman, Aven, Kuzmichev, Khan) were sanctioned in 2022; they hold no board seats, no voting rights and no economic benefit under the restructuring, but politically exposed persons still own ~21% indirectly. Some ESG-constrained institutions cannot own the stock, which thins liquidity (avg ~$6.7m a day traded).</p></div>
+  </div>
+</section>
+
+<!-- ================= CAPITAL STRUCTURE ================= -->
+<section id="capital" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Capital structure and holdco cash</span>
+    <h2>The 2027 wall is gone; the balance sheet is no longer the story</h2>
+  </div>
+  <div class="grid g-1-2">
+    <div class="card reveal"><h3>Balance sheet, 30 June 2026</h3>
+      <div class="kv"><span>Cash and deposits</span><b>$2,193m</b><span>Gross borrowings ex leases</span><b>$3,506m</b><span>Lease liabilities</span><b>$1,855m</b><span>Net debt ex leases &amp; Pakistan banking</span><b>$1,819m</b><span>Net debt / LTM EBITDAaL</span><b>1.10x</b><span>Internal leverage ceiling</span><b>1.5x</b><span>Net debt incl. leases / EBITDA (Edison 2026E)</span><b>~2.1x (peers 3.0x)</b><span>Total equity (book)</span><b>$1.5bn</b><span>Current ratio</span><b>0.97x</b></div>
+      <div class="explain blue"><h5>Why two leverage numbers?</h5><p>"EBITDAaL" is EBITDA after lease costs. Because VEON sold its towers, it now pays rent that IFRS books as a lease liability. Ex-leases leverage (1.1x) flatters the picture; including the $1.86bn of leases it is roughly 2x. Both are low for a telecom. Also note Pakistan banking customer deposits are excluded from net debt.</p></div>
+    </div>
+    <div>
+      <div class="grid g2">
+        <div class="card reveal"><div class="chart-title">HQ bond maturity profile after the May 2026 refinancing (US$m)</div><div class="chart-sub">Simplified: the 2027 notes shown are the residual after $886m was tendered.</div><div class="chart-box"><canvas id="chMat"></canvas></div><div class="src"><b>Source:</b> Northland, Auerbach Grayson, Baptista, INAM. $1.4bn new notes: $700m 6.95% due 2031, $700m 7.45% due 2033. ~$886m of the ~$1.1bn 3.375% Nov-2027 notes retired; $210m MidCo debt repaid. Remaining leverage sits at opco level (local-currency loans). Extra interest ~$40m/yr from 2027.</div></div>
+        <div class="card reveal"><div class="chart-title">Deleveraging path: long-term debt and equity (US$m, year-end)</div><div class="chart-box"><canvas id="chDebt"></canvas></div><div class="src"><b>Source:</b> Baptista Research multi-year balance sheet. The FY22→FY23 collapse is the Russia disposal ($5.1bn net deleveraging). The FY25 uptick is spectrum, leases and pre-funding.</div></div>
+      </div>
+      <div class="card reveal" style="margin-top:16px"><h3>Capital allocation framework</h3>
+        <div class="grid g4">
+          <div class="stat"><div class="v">$183m</div><div class="l">Repurchased since Aug 2024</div><div class="s">~1% of shares in first tranches</div></div>
+          <div class="stat"><div class="v">≥$100m</div><div class="l">Annual buyback floor, shares cancelled</div><div class="s">~2% of market cap at $68.82</div></div>
+          <div class="stat"><div class="v">15–17%</div><div class="l">Capex intensity ex-Ukraine</div><div class="s">~19% group LTM incl. Ukraine</div></div>
+          <div class="stat"><div class="v">FY27–28</div><div class="l">Dividend reinstatement (broker view)</div><div class="s">Auerbach $1.50 FY27, $1.91 FY28; Edison FY28</div></div>
+        </div>
+        <p style="margin-top:12px">Management's stated hierarchy: network and spectrum where returns are visible (Pakistan), in-market digital M&amp;A at disciplined multiples, buybacks while the stock trades at ~3x EBITDA, and dividends later. Auerbach expects $0.34–0.79bn of free cash flow to equity a year in 2027–2030 now that the maturity wall is refinanced. Governance items to note: 2023 clawback policy; a late 20-F filing in March 2024 that briefly breached Nasdaq rules and required lender consents; CFO turnover (Okandan → Brakenhoff 2023 → Özer 2025); a three-person group executive committee since Oct 2023.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SPECTRUM & TOWERS ================= -->
+<section id="assets" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker blue">Spectrum, towers, energy and satellites · the asset-light strategy</span>
+    <h2>Own the customer and the radio; rent the steel; buy the sun</h2>
+  </div>
+  <div class="grid g3">
+    <div class="card reveal"><h4>Towers sold</h4>
+      <div class="kv"><span>Pakistan (Deodar, Jun 2025)</span><b>10,500 · $563m</b><span>Bangladesh (Summit, 2023–24)</span><b>2,000 · $99m</b><span>Kazakhstan TNS-Plus 49%</span><b>$137.5m</b><span>Also divested</span><b>Ukraine, Uzbekistan towers</b></div>
+      <p>Proceeds cut leverage; opcos keep the active radios and sign long-term master lease agreements. Maintenance headcount and site security move to the tower company. Edison estimates ~$50m a year of structural free-cash-flow benefit as capex intensity settles at 15–16%.</p></div>
+    <div class="card reveal"><h4>Spectrum and network generations</h4>
+      <div class="kv"><span>Pakistan auction, Mar 2026</span><b>190 MHz · $240m · 15 yrs</b><span>Pakistan 4G penetration</span><b>77.1%</b><span>Ukraine 4G coverage</span><b>95% of controlled territory</b><span>Ukraine 3G</span><b>Switched off 7 Sep 2026</b><span>5G status</span><b>Test zones (Lviv 2.4 Gbps); commercial deferred</b><span>Est. Pakistan 5G cost (expert)</span><b>~$5bn over 10 years</b></div>
+      <p>The bull case is "4.9G": squeeze more out of LTE with refarmed spectrum before committing to 5G capex that $1–2 ARPU cannot yet pay for.</p></div>
+    <div class="card reveal"><h4>Energy and satellite</h4>
+      <div class="kv"><span>Kyivstar solar capacity</span><b>180 MW (~30% of network power)</b><span>Solar acquisition, Jul 2026</span><b>105 MW · $80.8m</b><span>Starlink direct-to-cell users, Ukraine</span><b>6m+</b><span>Starlink next</span><b>Kazakhstan, Bangladesh; Pakistan/Uzbekistan need approval</b></div>
+      <p>VEON treats satellite as a complementary layer, not a threat: it keeps the customer relationship whichever radio delivers the bits, and satellite is cheaper than towers in sparse Kazakh geography. Contract terms improve as more countries are added.</p></div>
+  </div>
+  <div class="card reveal" style="margin-top:16px"><div class="chart-title">Capex intensity: where the cash goes (% of revenue)</div><div class="chart-sub">Ukraine's wartime intensity is the outlier; digital needs a third of telecom's reinvestment.</div><div class="chart-box short"><canvas id="chCapex"></canvas></div><div class="src"><b>Source:</b> ZeroOne (group LTM 18.9%, ex-Ukraine 15.0%), management (digital ~7%, telecom ~20%), Auerbach (Ukraine &gt;25% three-year average), guidance 15–17% ex-Ukraine.</div></div>
+</section>
+
+<!-- ================= MOAT ================= -->
+<section id="moat" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Competitive position and moat</span>
+    <h2>Market shares, competitors, and what is actually defensible</h2>
+  </div>
+  <div class="grid g-2-1">
+    <div class="card reveal"><div class="chart-title">Mobile market share by country (%)</div><div class="chart-sub">VEON is #1 or co-#1 in four of five markets. Bangladesh is the exception.</div><div class="chart-box"><canvas id="chShare"></canvas></div><div class="src"><b>Source:</b> Northland, Auerbach Grayson, Edison via AlphaSense. Pakistan share estimated from 75.4m Jazz subscribers against a ~190m national base; competitors Zong (China Mobile), Telenor Pakistan (merging with Ufone/PTCL). Uzbekistan: four operators at 21–33% each.</div></div>
+    <div class="card reveal"><h3>Sources of moat</h3>
+      <ul class="clean bull">
+        <li><strong>Distribution at near-zero acquisition cost.</strong> Standalone fintechs pay to find customers; VEON already bills them.</li>
+        <li><strong>Payment rails and licences.</strong> Once a wallet like JazzCash has scale and a licence, it is an oligopoly with high barriers; banks cannot match telecom distribution in unbanked markets.</li>
+        <li><strong>Identity and data.</strong> KYC'd SIM base plus payment history is a credit-underwriting asset competitors lack.</li>
+        <li><strong>Switching costs.</strong> Multiplay customers churn less; leaving means leaving wallet, TV and loan history.</li>
+        <li><strong>Lighter regulation</strong> in frontier markets leaves room to launch services a European operator could not.</li>
+      </ul>
+      <h3 style="margin-top:18px">Threats to the moat</h3>
+      <ul class="clean bear">
+        <li>State-backed operators (Kazakhtelecom) with regulatory proximity and subsidies.</li>
+        <li>Deep-pocketed foreign entrants (China Mobile in Pakistan) starting price wars.</li>
+        <li>Specialist digital natives with better product in any single vertical.</li>
+        <li>Handset affordability and low smartphone penetration, especially among women, capping digital adoption.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card reveal" style="margin-top:16px"><div class="chart-title">Competitor snapshot</div>
+    <div class="tbl-wrap"><table><tr><th>Market</th><th>VEON brand (rank)</th><th>Main competitors</th><th>Competitive dynamic</th><th>Evidence</th></tr>
+    <tr><td>Pakistan</td><td>Jazz (#1)</td><td>Zong (China Mobile), Telenor/Ufone-PTCL</td><td>Price-war risk from foreign-funded rival; Jazz counters with bundled digital value</td><td>Revenue +26.6%, EBITDA +31.9% in 2Q26</td></tr>
+    <tr><td>Ukraine</td><td>Kyivstar (#1, 47%)</td><td>Vodafone Ukraine, lifecell</td><td>Consolidated three-player market; ARPU rising despite fewer subscribers</td><td>55% EBITDA margin</td></tr>
+    <tr><td>Kazakhstan</td><td>Beeline (co-#1, 43%)</td><td>Kcell/Kazakhtelecom (state), Tele2-Altel</td><td>State incumbent close to regulator; Beeline leads on digital and rural tax relief</td><td>Kcell trades ~8x EBITDA</td></tr>
+    <tr><td>Bangladesh</td><td>Banglalink (#3, 20%)</td><td>Grameenphone (Telenor, 45%, 60% margin), Robi Axiata (31%)</td><td>Intensely price-sensitive; challenger on price, youth and speed</td><td>Valued at 3x vs Grameenphone 4x EBITDA</td></tr>
+    <tr><td>Uzbekistan</td><td>Beeline (joint #1, 21%)</td><td>Ucell, Uzmobile (state), Mobiuz</td><td>Fragmented, oligarch- and state-funded capex races</td><td>ARPU-led growth, 46% multiplay</td></tr></table></div>
+  </div>
+</section>
+
+<!-- ================= VALUATION ================= -->
+<section id="valuation" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Valuation · multiples, SOTP builder, broker targets</span>
+    <h2>Cheap on every consolidated multiple; cheaper still as a sum of parts</h2>
+    <p class="lede">Two ways to value VEON. The consolidated way: apply a telecom multiple to group EBITDA. The sum-of-the-parts (SOTP) way: value the listed Kyivstar stake at market, JazzCash like a fintech, the rest like a telecom, then subtract debt and a "holdco discount" for complexity. Every broker in the folder ends up above the current price on both.</p>
+  </div>
+  <div class="grid g-2-1">
+    <div class="card reveal"><div class="chart-title">Forward EV/EBITDA and P/E: VEON vs emerging-market telecom peers</div><div class="chart-sub">VEON recomputed at $68.82 on ZeroOne FY26E ($2,235m EBITDA, $6.51 EPS, 70m ADS). Peers are Baptista's NTM set (18 Aug 2026).</div><div class="chart-box tall"><canvas id="chPeers"></canvas></div><div class="src"><b>Source:</b> Baptista Research comparable table; ZeroOne model. At $52 in early August VEON was 2.5x EV/EBITDA and 8.0x P/E; at $68.82 it is ~2.9x and ~10.6x. Peer median EV/EBITDA ~4.4x (Baptista), 4.6–5.0x (ZeroOne, INAM), 5.3x (Auerbach). Litchfield's blended telecom-plus-fintech peer set shows a 58–67% discount.</div></div>
+    <div class="card reveal"><h3>Live multiples at $68.82</h3>
+      <div class="kv" id="liveMult"></div>
+      <div class="explain"><h5>Share count caveat</h5><p>ZeroOne and Litchfield use ~72m ADS-equivalents; Baptista uses 68.86m (excluding treasury; ~7% of ADSs were held in treasury at 30 June and the framework cancels what it buys). This dashboard uses 70m by default; change it in the SOTP builder.</p></div>
+    </div>
+  </div>
+
+  <div class="card reveal" style="margin-top:16px">
+    <h3>Interactive SOTP builder</h3>
+    <p style="font-size:13px">Defaults follow Baptista's three-part method (Kyivstar at market, Pakistan financial services on revenue, everything else on EBITDA) but with Kyivstar at today's price. Move the sliders to build your own view. Brokers' implied choices are marked.</p>
+    <div class="grid g-1-2" style="margin-top:14px">
+      <div>
+        <label class="ctl"><span>KYIV share price (US$)</span><b id="o_kyiv">13.66</b></label><input class="slider" type="range" id="i_kyiv" min="8" max="20" step="0.1" value="13.66" oninput="calcSOTP()">
+        <label class="ctl"><span>Pakistan financial-services annualised revenue (US$m)</span><b id="o_pfs">522</b></label><input class="slider" type="range" id="i_pfs" min="400" max="700" step="5" value="522" oninput="calcSOTP()">
+        <label class="ctl"><span>Multiple on that revenue (x) · Baptista 2/3/4 · mgmt reference 7–7.5</span><b id="o_pfsm">3.0</b></label><input class="slider" type="range" id="i_pfsm" min="1" max="8" step="0.1" value="3" oninput="calcSOTP()">
+        <label class="ctl"><span>Residual EBITDA ex-Ukraine ex-Pak FS, annualised (US$m)</span><b id="o_res">1250</b></label><input class="slider" type="range" id="i_res" min="1000" max="1500" step="10" value="1250" oninput="calcSOTP()">
+        <label class="ctl"><span>EV/EBITDA on residual (x) · Baptista 3.3/3.5/4.3 · peers ~4.4 · Kcell 8</span><b id="o_resm">3.55</b></label><input class="slider" type="range" id="i_resm" min="2" max="8" step="0.05" value="3.55" oninput="calcSOTP()">
+        <label class="ctl"><span>Residual net debt (US$m)</span><b id="o_nd">1983</b></label><input class="slider" type="range" id="i_nd" min="1500" max="2500" step="10" value="1983" oninput="calcSOTP()">
+        <label class="ctl"><span>Holdco discount · StoneX 10% · Baptista 12% · Auerbach 15% · pre-2023 up to 30%</span><b id="o_hd">12%</b></label><input class="slider" type="range" id="i_hd" min="0" max="35" step="1" value="12" oninput="calcSOTP()">
+        <label class="ctl"><span>ADS-equivalent shares (m)</span><b id="o_sh">70</b></label><input class="slider" type="range" id="i_sh" min="66" max="74" step="0.5" value="70" oninput="calcSOTP()">
+      </div>
+      <div>
+        <div class="grid g3">
+          <div class="stat"><div class="v" id="s_ps">$—</div><div class="l">Implied value per ADS</div><div class="s" id="s_up">vs $68.82</div></div>
+          <div class="stat"><div class="v" id="s_eq">$—</div><div class="l">Implied equity value</div><div class="s">after holdco discount</div></div>
+          <div class="stat"><div class="v" id="s_kv">$—</div><div class="l">Kyivstar stake value</div><div class="s">83.6% × 230.9m shares</div></div>
+        </div>
+        <div class="chart-box" style="margin-top:14px;height:300px"><canvas id="chSOTP"></canvas></div>
+        <div class="src"><b>Method (Baptista):</b> Pakistan FS 1H26 revenue $261m annualised to $522m. Residual EBITDA = 1H26 group $1,069m minus Ukraine $363m minus estimated Pak FS EBITDA ~$81m, annualised ≈ $1,250m. Residual net debt = $1,819m group net debt + $164m Ukraine net cash excluded. No value assigned to Ukraine Tower Company, AI, Starlink or Bangladesh fintech.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card reveal"><div class="chart-title">Broker price targets vs live price (US$ per ADS)</div><div class="chart-sub">Every target in the folder was set between Feb and Sep 2026 at prices of $52–57.</div><div class="chart-box tall"><canvas id="chTargets"></canvas></div><div class="src"><b>Source:</b> StoneX Buy $85 (SOTP, 10% holdco); Auerbach Grayson Buy $100 (SOTP, 15%); Litchfield Hills Buy $94 (discounted earnings at 16%); ZeroOne $82 (12.6x P/E, 3.4x EV/EBITDA); Edison $81.6 (DCF); INAM fair value $81; Baptista Buy $80.8 (bear $70.7, bull $99); Northland Outperform $70. Note: several of these firms are paid by VEON for research distribution (INAM, Litchfield, Baptista disclose this; ZeroOne states VEON is a client).</div></div>
+    <div class="card reveal"><div class="chart-title">Auerbach Grayson SOTP: enterprise value by asset (US$m)</div><div class="chart-sub">Mobile at a 5.3x weighted EBITDA multiple ($10.1bn) plus digital assets ($2.4bn); 15% holdco discount → $100.</div><div class="chart-box tall"><canvas id="chAG"></canvas></div><div class="src"><b>Source:</b> Auerbach Grayson 23 Jul 2026 via AlphaSense. Digital: JazzCash $1,130m at 10x EBITDA; Uklon $917m at 18x; Tabletki $175m at 7x; Mobilink Bank $149m. StoneX's alternative: Pakistan $3,615m, Kazakhstan $3,291m, Bangladesh $1,144m, Uzbekistan $428m, Kyivstar stake $3,517m, HQ −$716m = $11,279m, 10% discount → $85. Northland: ex-Kyivstar EV ~$5bn = 3.5x EBITDA, or 1.8x after netting the Kyivstar stake.</div></div>
+  </div>
+  <div class="callout reveal" style="margin-top:16px"><div class="ic">⚖️</div><div><strong>What the market is saying at $68.82.</strong> The stock has already moved a third of the way from the August levels to the broker cluster around $80–85. Northland's $70 target has essentially been reached. The debate is no longer "is it cheap on 2.5x" but "does 2.9x on a business growing 17% with a listed subsidiary worth ~55% of the market cap deserve to close toward 4.4x". Upcoming benchmark: Airtel Money's planned listing at ~$6.8bn (10.3x EBITDA, 5.4x sales) would give JazzCash a public comparable.</div></div>
+</section>
+
+<!-- ================= BULL / BEAR ================= -->
+<section id="bullbear" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Bull vs bear</span>
+    <h2>The debate, both sides argued properly</h2>
+  </div>
+  <div class="vs reveal">
+    <div class="card"><span class="kicker bull">Bull case</span>
+      <ul class="clean bull">
+        <li><strong>Digital is real and more profitable than planned.</strong> $342m/qtr, +54%, 36% margin vs a 20–25% plan, 7% capex. At 29% cash margin it out-earns telecom per dollar of revenue.</li>
+        <li><strong>JazzCash alone could be worth more than half of VEON ex-Kyivstar.</strong> ~$500m revenue, ~$150m EBITDA, growing 50%; fintech peers list at 7–7.5x revenue; Airtel Money's IPO sets a benchmark.</li>
+        <li><strong>The listed Kyivstar stake is ~55% of the market cap</strong>, implying the other four countries plus all digital trade at under 2x EBITDA.</li>
+        <li><strong>Guidance raised twice on organic strength</strong>; five straight quarters of sequential growth; beats against every broker model.</li>
+        <li><strong>Balance sheet fixed.</strong> 1.1x leverage, 2027 wall refinanced, $2.2bn cash, $1bn+ of FCFF dropping to equity from 2027 (Auerbach).</li>
+        <li><strong>Permanent buyback with cancellation</strong> (≥$100m/yr, ~2% of market cap) compounds even without a re-rating; dividend optionality FY27–28.</li>
+        <li><strong>Optionality not in any target:</strong> Ukraine ceasefire, JazzCash IPO or strategic stake, Bangladesh fintech, sovereign AI, Starlink distribution, OLX.</li>
+        <li><strong>Discount already narrowing:</strong> holdco discounts were 30% pre-Russia-exit; brokers now use 10–15%.</li>
+      </ul></div>
+    <div class="card bear"><span class="kicker bear">Bear case</span>
+      <ul class="clean bear">
+        <li><strong>Currency is the killer variable.</strong> PKR halved 2021–23; KZT swung 20% in 2025. Costs inflate faster than prices can be raised. Digital assets are early-stage and equally exposed.</li>
+        <li><strong>Ukraine is a war zone and a nationalisation risk</strong> because of the historical Russian UBO link; capex intensity above 25% for three years; population shrinking.</li>
+        <li><strong>Kazakhstan shows how fast margins can break:</strong> −10pp in a year from a VAT change and bundling accounting, with no pricing response yet.</li>
+        <li><strong>Sub-scale in two markets:</strong> #3 in Bangladesh behind a 60%-margin incumbent; 21% share in fragmented Uzbekistan; state-backed rivals with regulatory proximity.</li>
+        <li><strong>Energy fragility:</strong> Hormuz-driven fuel shortages cut Bangladesh data usage 15%; grids in Pakistan and Bangladesh cannot support centralised backup.</li>
+        <li><strong>Credit risk is being added to a telecom multiple.</strong> 224k loans a day in Pakistan has never been through a credit cycle.</li>
+        <li><strong>Digital growth must normalise</strong> and includes acquisitions; group margin mechanically dilutes as mix shifts; 50% target needs M&amp;A that could stretch management.</li>
+        <li><strong>Structural discount may never close:</strong> complexity, PEP ownership, thin liquidity (~$7m/day), and a mix of sponsored research. A better business does not guarantee a higher multiple.</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- ================= RISKS ================= -->
+<section id="risks" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker bear">Key risks · probability × impact</span>
+    <h2>What could break the thesis</h2>
+  </div>
+  <div class="grid g-2-1">
+    <div class="card reveal"><div class="chart-title">Risk matrix</div><div class="chart-sub">Position is this dashboard's judgement from the source reports. Hover for detail. Colour = category.</div><div class="chart-box tall"><canvas id="chRisk"></canvas></div></div>
+    <div class="card reveal"><h3>Risk register</h3>
+      <div class="tbl-wrap"><table><tr><th>Risk</th><th>Mitigant / watch item</th></tr>
+      <tr><td>Currency devaluation faster than inflation</td><td>Nominal-GDP pricing; more local-currency debt; watch PKR, KZT monthly</td></tr>
+      <tr><td>Ukraine escalation or nationalisation</td><td>Listed KYIV gives a price; $1.3bn invested; Ukraine's reputational incentive</td></tr>
+      <tr><td>Kazakhstan margin stays depressed</td><td>Pricing actions in 2H26; bundle accounting unwinds over contract life</td></tr>
+      <tr><td>Energy cost / outages</td><td>180 MW solar Ukraine; site solar South Asia; Starlink backup</td></tr>
+      <tr><td>Regulatory and tax shocks</td><td>Pakistan/Bangladesh tax-reform lobbying; diversified across five regulators</td></tr>
+      <tr><td>Credit losses at JazzCash</td><td>Nano-loans, short duration; payments-first data; provisioning improving</td></tr>
+      <tr><td>M&amp;A overreach for the 50% target</td><td>Stated discipline at ~3.5x EBITDA; deals so far at 1.7x revenue / 8x EBITDA</td></tr>
+      <tr><td>Governance / ownership overhang</td><td>No sanctioned persons in roles; clawback policy; Dubai domicile</td></tr>
+      <tr><td>Digital growth normalisation</td><td>Bull case does not need &gt;50%; watch organic vs acquired split</td></tr>
+      <tr><td>Liquidity and sponsored coverage</td><td>Rising volumes; Kyivstar listing; Capital Markets Day 16 Nov 2026</td></tr></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CATALYSTS ================= -->
+<section id="watch" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker bull">Catalysts and what to watch</span>
+    <h2>The next twelve months</h2>
+  </div>
+  <div class="grid g4">
+    <div class="card reveal"><h4>Dated</h4><ul class="clean"><li><strong>3Q26 results (Nov 2026):</strong> Kazakhstan margin trajectory; 2H run-rate vs the 15–18% guide.</li><li><strong>Capital Markets Day, New York, 16 Nov 2026:</strong> medium-term targets; digital 50% path; capital-return policy.</li><li><strong>Mukto Pay launch, Bangladesh, Sep–Oct 2026.</strong></li><li><strong>OLX Kazakhstan closing</strong> (regulatory approval pending).</li></ul></div>
+    <div class="card reveal"><h4>Value-unlock events</h4><ul class="clean bull"><li>JazzCash: standalone disclosure, strategic investor or IPO.</li><li>Airtel Money listing as a public fintech comparable.</li><li>Further Kyivstar sell-down or Ukrainian retail access to KYIV.</li><li>Dividend reinstatement (FY27–28 per brokers).</li></ul></div>
+    <div class="card reveal"><h4>Macro / geopolitical</h4><ul class="clean bear"><li>Ukraine ceasefire or settlement: cuts the 15.5% risk premium and unlocks reconstruction.</li><li>Oil price and Hormuz: energy cost and outage risk in South Asia.</li><li>PKR/KZT/BDT moves against the 4% assumption.</li><li>Pakistan and Bangladesh mobile-tax reform.</li></ul></div>
+    <div class="card reveal"><h4>KPIs to track each quarter</h4><ul class="clean blue"><li>Digital share of revenue (26.9%) and digital margin (36.1%).</li><li>JazzCash MAU, GTV, loans/day; FS active users (58.8m).</li><li>Multiplay customers (45.3m) and ARPU uplift (~4x).</li><li>Kazakhstan EBITDA margin (39.4% vs 49.6%).</li><li>Capex intensity ex-Ukraine (15.0% LTM) and equity FCF.</li><li>Net debt/EBITDAaL (1.10x) and buyback pace.</li></ul></div>
+  </div>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section id="glossary" class="wrap" style="padding-top:0">
+  <div class="section-head reveal">
+    <span class="kicker">Glossary · every term used above</span>
+    <h2>Plain-English definitions</h2>
+  </div>
+  <div class="gl reveal">
+    <div><b>ADS</b><small>American Depositary Share: the Nasdaq-traded instrument representing VEON common shares. Prices, EPS and targets are quoted per ADS.</small></div>
+    <div><b>ARPU</b><small>Average revenue per user per month. VEON's telecom ARPU is ~$2; multiplay customers pay ~4x voice-only.</small></div>
+    <div><b>EBITDA / EBITDAaL</b><small>Earnings before interest, tax, depreciation and amortisation. "aL" = after lease costs, i.e. after tower rent.</small></div>
+    <div><b>Capex intensity</b><small>Capital expenditure as a % of revenue. Telecom ~20%, digital ~7%, group guide 15–17% ex-Ukraine.</small></div>
+    <div><b>Multiplay</b><small>A customer who uses connectivity plus at least one VEON digital service. 45.3m in 2Q26.</small></div>
+    <div><b>Digital-only user</b><small>Someone using a VEON app (JazzCash, Uklon, Toffee) without a VEON SIM. 76m.</small></div>
+    <div><b>MFS / PSP</b><small>Mobile financial services; Payment Service Provider licence (what Banglalink received for Mukto Pay).</small></div>
+    <div><b>GTV / GMV</b><small>Gross transaction value through a wallet / gross merchandise value through a marketplace. Not revenue; revenue is the small fee taken on it.</small></div>
+    <div><b>SOTP</b><small>Sum-of-the-parts: value each business separately, add them up, subtract debt and a holdco discount.</small></div>
+    <div><b>Holdco discount</b><small>The haircut investors apply to a holding company versus its underlying assets, for complexity, cash trapping, taxes and governance. 10–15% for VEON today; ~30% before 2023.</small></div>
+    <div><b>Spectrum</b><small>Government-licensed radio frequencies, bought at auction for ~15 years. More MHz = more capacity.</small></div>
+    <div><b>Sale-and-leaseback</b><small>Selling towers to a tower company and renting them back under a long master lease.</small></div>
+    <div><b>4G / 4.9G / 5G</b><small>Network generations. VEON is maximising LTE (4G, "4.9G") before committing to 5G capex.</small></div>
+    <div><b>Hyperinflation accounting (IAS 29)</b><small>Restating figures for purchasing-power loss in very high-inflation economies before converting to USD.</small></div>
+    <div><b>Nominal GDP pricing</b><small>Raising local prices in line with real growth plus inflation so that dollar revenue holds over a 3–7 year cycle.</small></div>
+    <div><b>UBO / PEP</b><small>Ultimate beneficial owner; politically exposed person. Relevant to LetterOne's sanctioned founders, who have no control or economic benefit today.</small></div>
+    <div><b>DO1440 / AI1440</b><small>VEON's strategy brands: engage the customer across all 1,440 minutes of the day, now with AI embedded.</small></div>
+    <div><b>Sovereign LLM</b><small>A large language model trained on a national language and hosted under national data rules (Kaz-LLM, Ukrainian Gemma model).</small></div>
+  </div>
+  <div class="card reveal" style="margin-top:24px">
+    <h4>Sources used</h4>
+    <p style="font-size:13px">AlphaSense Company Primer (15 Sep 2026, synthesising StoneX, Auerbach Grayson, Northland, Edison, Deutsche Bank, BTIG, Oppenheimer, expert calls, VEON filings) · AlphaSense Bull &amp; Bear Analysis (15 Sep 2026) · Baptista Research initiation "Inside the Hidden Digital Value" (18 Aug 2026) · ZeroOne Investment Research 2Q26 review (2 Aug 2026) and Financial Model (11 Aug 2026) · INAM 2Q26 review (3 Aug 2026, sponsored) · Litchfield Hills Research top-down update (20 Aug 2026, sponsored) · Live prices: IBKR, 15 Sep 2026. Currency history for UAH, BDT and UZS is contextual public data, not from the folder. This is a research aid, not investment advice.</p>
+  </div>
+</section>
+
+<footer>VEON (VEON US) first-principles research dashboard · built 15 September 2026 · all figures US$ unless stated · for internal research use</footer>
+
+<script>
+/* ============ CONSTANTS ============ */
+const LIVE = 68.82, KYIV_PX = 13.66, KYIV_SH = 230.9, STAKE = 0.836;
+const C = {pak:'#3987e5',ukr:'#d95926',kaz:'#199e70',ban:'#c98500',uzb:'#d55181',hq:'#9085e9',other:'#6B7390',
+  text:'#E5EAF5',dim:'#9AA4BD',mute:'#6B7390',grid:'rgba(255,255,255,0.06)',bull:'#22C55E',bear:'#EF4444',warn:'#F59E0B',accent:'#F5C542',blue:'#3987e5'};
+const MK = [
+ {k:'pak',name:'Pakistan',brand:'Jazz · JazzCash · Mobilink Bank',ll:[30.4,69.3],cap:'Islamabad',rev25:1624,ebitda25:712,rev2q:500,eb2q:216,rev2q25:395,eb2q25:164,subs:73.5,arpu:15.94/12,share:'#1 (~39%)',digital:'38.7%',ccy:'PKR (150→300→~278 per $)',risk:'Currency, 37% sector tax, energy, Zong price war, JazzCash credit cycle',rev26:1991,eb26:878.9},
+ {k:'ukr',name:'Ukraine',brand:'Kyivstar (Nasdaq: KYIV, 83.6%) · Uklon · Helsi · Tabletki',ll:[48.4,31.2],cap:'Kyiv',rev25:1164,ebitda25:650,rev2q:341,eb2q:189,rev2q25:286,eb2q25:166,subs:22.5,arpu:45.85/12,share:'#1 (47%)',digital:'~22% ($74m)',ccy:'UAH',risk:'War damage, energy outages, nationalisation tail risk, population decline',rev26:1416,eb26:770.6},
+ {k:'kaz',name:'Kazakhstan',brand:'Beeline · Simply · QazCode · OLX (pending)',ll:[48.0,66.9],cap:'Almaty',rev25:816,ebitda25:408,rev2q:226,eb2q:89,rev2q25:201,eb2q25:100,subs:11.7,arpu:60.5/12,share:'Co-#1 (43%)',digital:'~23%',ccy:'KZT (440→540→~487 per $)',risk:'VAT 12→16% not passed through, state-owned Kazakhtelecom, tenge volatility',rev26:919,eb26:377.7},
+ {k:'ban',name:'Bangladesh',brand:'Banglalink · Toffee · Mukto Pay',ll:[23.7,90.4],cap:'Dhaka',rev25:460,ebitda25:226,rev2q:120,eb2q:49,rev2q25:117,eb2q25:88,subs:34.7,arpu:12.39/12,share:'#3 (20%)',digital:'14%',ccy:'BDT',risk:'Grameenphone dominance, 47% sector tax, BTRC claim, energy outages, politics',rev26:476,eb26:193.6},
+ {k:'uzb',name:'Uzbekistan',brand:'Beeline · Beepul · Uklon · Tashkent IT Park',ll:[41.4,64.6],cap:'Tashkent',rev25:308,ebitda25:115,rev2q:84,eb2q:31,rev2q25:75,eb2q25:28,subs:7.9,arpu:34.04/12,share:'Joint #1 (21%)',digital:'~25%',ccy:'UZS',risk:'Fragmented four-player market, state and oligarch-backed rivals, cost inflation',rev26:348,eb26:125.8}
+];
+const fmt = (n,d=0)=>n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const money = n => (n>=1000? '$'+fmt(n/1000,2)+'bn' : '$'+fmt(n)+'m');
+
+/* ============ CHART DEFAULTS ============ */
+Chart.defaults.color = C.dim; Chart.defaults.font.family = 'Inter'; Chart.defaults.font.size = 12;
+Chart.defaults.plugins.legend.labels.boxWidth = 10; Chart.defaults.plugins.legend.labels.boxHeight = 10;
+Chart.defaults.plugins.tooltip.backgroundColor = '#11172B'; Chart.defaults.plugins.tooltip.borderColor='rgba(255,255,255,0.14)'; Chart.defaults.plugins.tooltip.borderWidth=1; Chart.defaults.plugins.tooltip.titleColor=C.text; Chart.defaults.plugins.tooltip.bodyColor=C.dim; Chart.defaults.plugins.tooltip.padding=10;
+Chart.defaults.elements.bar.borderRadius = 4; Chart.defaults.elements.bar.borderSkipped = 'start';
+Chart.defaults.elements.line.borderWidth = 2; Chart.defaults.elements.point.radius = 4; Chart.defaults.elements.point.hoverRadius = 6;
+const gridOpt = {grid:{color:C.grid},border:{display:false}};
+const xNoGrid = {grid:{display:false},border:{display:false}};
+
+/* ============ COUNTERS ============ */
+function animateCounters(){
+  document.querySelectorAll('[data-count]').forEach(el=>{
+    const end=parseFloat(el.dataset.count), dec=parseInt(el.dataset.dec||0), pre=el.dataset.prefix||'', suf=el.dataset.suffix||'';
+    const t0=performance.now(), dur=1400;
+    const step=now=>{const p=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-p,3); el.textContent=pre+fmt(end*e,dec)+suf; if(p<1) requestAnimationFrame(step);};
+    requestAnimationFrame(step);
+  });
+}
+
+/* ============ REVEAL + NAV ============ */
+const io = new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in'); io.unobserve(e.target);}}),{threshold:0.08});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+const navLinks=[...document.querySelectorAll('.nav-links a')];
+const secObs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){navLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id));}});},{rootMargin:'-40% 0px -55% 0px'});
+document.querySelectorAll('section[id]').forEach(s=>secObs.observe(s));
+
+/* ============ TABS ============ */
+function showTab(id,btn){
+  const pane=document.getElementById(id); const parent=pane.parentElement;
+  parent.querySelectorAll(':scope > .tabpane').forEach(p=>p.classList.remove('active')); pane.classList.add('active');
+  btn.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active');
+}
+
+/* ============ TELECOM 101 ============ */
+function calc101(){
+  const s=+i_subs.value, a=+i_arpu.value, m=+i_m.value, cx=+i_cx.value;
+  o_subs.textContent=s; o_arpu.textContent=a.toFixed(2); o_m.textContent=m+'%'; o_cx.textContent=cx+'%';
+  const rev=s*a*12, eb=rev*m/100, cash=eb-rev*cx/100;
+  r_rev.textContent='$'+(rev/1000).toFixed(2)+'bn'; r_ebitda.textContent='$'+(eb/1000).toFixed(2)+'bn'; r_ocf.textContent='$'+(cash/1000).toFixed(2)+'bn'; r_conv.textContent=Math.round(cash/rev*100)+'%';
+}
+function preset101(t,btn){
+  btn.parentElement.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active');
+  if(t==='telco'){i_subs.value=150;i_arpu.value=2;i_m.value=45;i_cx.value=20;} else {i_subs.value=228;i_arpu.value=0.5;i_m.value=36;i_cx.value=7;}
+  calc101();
+}
+calc101();
+
+/* ============ MAP ============ */
+const map = L.map('map',{scrollWheelZoom:false,attributionControl:true}).setView([37,62],3.6);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:12}).addTo(map);
+function panel(m){
+  const el=document.getElementById('mapPanel'); const g=(a,b)=>((a/b-1)*100).toFixed(1);
+  el.innerHTML=`<h3><i class="dot" style="background:${C[m.k]}"></i>${m.name}</h3><div style="color:var(--text-dim);font-size:13px">${m.brand}</div>
+  <div class="kv"><span>Market position</span><b>${m.share}</b><span>FY25 revenue / EBITDA</span><b>$${fmt(m.rev25)}m / $${fmt(m.ebitda25)}m</b><span>Share of group FY25 revenue</span><b>${(m.rev25/4372*100).toFixed(0)}%</b><span>2Q26 revenue (YoY)</span><b>$${m.rev2q}m (${g(m.rev2q,m.rev2q25)>0?'+':''}${g(m.rev2q,m.rev2q25)}%)</b><span>2Q26 EBITDA (margin)</span><b>$${m.eb2q}m (${(m.eb2q/m.rev2q*100).toFixed(1)}%)</b><span>Subscribers (FY25 avg)</span><b>${m.subs}m</b><span>Telecom ARPU</span><b>$${m.arpu.toFixed(2)}/month</b><span>Digital share of revenue</span><b>${m.digital}</b><span>Currency</span><b>${m.ccy}</b><span>FY26E revenue / EBITDA (ZeroOne)</span><b>$${fmt(m.rev26)}m / $${fmt(m.eb26)}m</b></div>
+  <div class="explain bear"><h5>Key risk</h5><p>${m.risk}</p></div>
+  <button class="tab" onclick="document.getElementById('c-${m.k}').scrollIntoView({behavior:'smooth',block:'start'});showTab('c-${m.k}',document.querySelector('#countries .tabs .tab:nth-child(${['pak','ukr','kaz','ban','uzb'].indexOf(m.k)+1})'))">Open full country review →</button>`;
+}
+MK.forEach(m=>{
+  const r=Math.sqrt(m.rev25)*1.1;
+  const c=L.circleMarker(m.ll,{radius:r,color:C[m.k],weight:2,fillColor:C[m.k],fillOpacity:0.35}).addTo(map);
+  c.bindTooltip(`<b>${m.name}</b> · ${m.brand.split(' · ')[0]}<br>FY25 rev $${fmt(m.rev25)}m · ${m.share}`,{direction:'top'});
+  c.on('click',()=>panel(m));
+});
+L.circleMarker([25.2,55.3],{radius:7,color:C.hq,weight:2,fillColor:C.hq,fillOpacity:0.6}).addTo(map).bindTooltip('<b>Dubai HQ</b> (DIFC) · since late 2024 · $968m cash at HQ',{direction:'top'});
+[[55.75,37.6,'Russia · exited Oct 2023 (~44% of FY21 EBITDA, $5.1bn deleveraging)'],[42.87,74.6,'Kyrgyzstan · exited']].forEach(x=>L.circleMarker([x[0],x[1]],{radius:6,color:C.other,weight:1,fillColor:C.other,fillOpacity:0.25,dashArray:'3'}).addTo(map).bindTooltip(x[2],{direction:'top'}));
+panel(MK[0]);
+
+/* ============ FX TOOL ============ */
+const FXD = {}; MK.forEach(m=>FXD[m.k]={g:((m.rev26/m.rev25)-1)*100,d:0});
+function buildFX(){
+  const c=document.getElementById('fxControls'); c.innerHTML='';
+  MK.forEach(m=>{const g=FXD[m.k].g.toFixed(1);
+    c.insertAdjacentHTML('beforeend',`<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:${C[m.k]}">${m.name}</div>
+    <label class="ctl"><span>Local-currency revenue growth</span><b id="fxg_${m.k}">${g}%</b></label><input class="slider" type="range" id="ig_${m.k}" min="-10" max="40" step="0.5" value="${g}" oninput="calcFX()">
+    <label class="ctl"><span>Currency depreciation vs USD</span><b id="fxd_${m.k}">0%</b></label><input class="slider" type="range" id="id_${m.k}" min="-10" max="40" step="0.5" value="0" oninput="calcFX()"></div>`);
+  });
+}
+buildFX();
+let chFX;
+function calcFX(){
+  let rev=0, eb=0; const base=[], now=[]; const pass=+i_pass.value; o_pass.textContent=pass.toFixed(1);
+  MK.forEach(m=>{const g=+document.getElementById('ig_'+m.k).value, d=+document.getElementById('id_'+m.k).value;
+    document.getElementById('fxg_'+m.k).textContent=g.toFixed(1)+'%'; document.getElementById('fxd_'+m.k).textContent=d.toFixed(1)+'%';
+    const usdRev=m.rev25*(1+g/100)/(1+d/100); const margin=m.eb26/m.rev26 - pass/100; const usdEb=usdRev*margin;
+    rev+=usdRev; eb+=usdEb; base.push(m.eb26); now.push(usdEb);
+  });
+  eb-=106; // HQ costs (Baptista FY26E)
+  fx_rev.textContent='$'+fmt(rev)+'m'; fx_ebitda.textContent='$'+fmt(eb)+'m';
+  const rg=(rev/4399-1)*100, eg=(eb/2009-1)*100;
+  fx_rev_g.innerHTML=`${rg>=0?'+':''}${rg.toFixed(1)}% vs FY25 · guide 15–18% <span class="pill ${rg>=15&&rg<=18?'bull':rg<15?'bear':'warn'}">${rg>=15&&rg<=18?'within':rg<15?'below':'above'}</span>`;
+  fx_ebitda_g.innerHTML=`${eg>=0?'+':''}${eg.toFixed(1)}% vs FY25 · guide 9–12% <span class="pill ${eg>=9&&eg<=12?'bull':eg<9?'bear':'warn'}">${eg>=9&&eg<=12?'within':eg<9?'below':'above'}</span>`;
+  if(!chFX){chFX=new Chart(document.getElementById('chFX'),{type:'bar',data:{labels:MK.map(m=>m.name),datasets:[{label:'Base case (ZeroOne FY26E)',data:base,backgroundColor:'rgba(255,255,255,0.18)'},{label:'Your scenario',data:now,backgroundColor:MK.map(m=>C[m.k])}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>'$'+v+'m'}}},plugins:{legend:{position:'bottom'}}}});}
+  else {chFX.data.datasets[1].data=now; chFX.update();}
+}
+function resetFX(){MK.forEach(m=>{document.getElementById('ig_'+m.k).value=FXD[m.k].g.toFixed(1);document.getElementById('id_'+m.k).value=0;}); i_pass.value=0; calcFX();}
+calcFX();
+
+/* ============ SOTP ============ */
+let chSOTP;
+function calcSOTP(){
+  const kp=+i_kyiv.value, pfs=+i_pfs.value, pfsm=+i_pfsm.value, res=+i_res.value, resm=+i_resm.value, nd=+i_nd.value, hd=+i_hd.value, sh=+i_sh.value;
+  o_kyiv.textContent=kp.toFixed(2); o_pfs.textContent=pfs; o_pfsm.textContent=pfsm.toFixed(1); o_res.textContent=res; o_resm.textContent=resm.toFixed(2); o_nd.textContent=nd; o_hd.textContent=hd+'%'; o_sh.textContent=sh;
+  const kv=kp*KYIV_SH*STAKE, pv=pfs*pfsm, rev_=res*resm, gross=kv+pv+rev_-nd, disc=gross*hd/100, eq=gross-disc, ps=eq/sh;
+  s_ps.textContent='$'+ps.toFixed(1); s_eq.textContent=money(eq); s_kv.textContent=money(kv);
+  const up=(ps/LIVE-1)*100; s_up.innerHTML=`<span class="pill ${up>=0?'bull':'bear'}">${up>=0?'+':''}${up.toFixed(0)}% vs $${LIVE}</span>`;
+  const labels=['Kyivstar stake','Pakistan fin. services','Residual telecom + digital EV','Less: residual net debt','Less: holdco discount','Implied equity'];
+  const data=[kv,pv,rev_,-nd,-disc,eq];
+  if(!chSOTP){chSOTP=new Chart(document.getElementById('chSOTP'),{type:'bar',data:{labels,datasets:[{label:'US$m',data,backgroundColor:[C.ukr,C.pak,C.blue,C.bear,C.warn,C.accent]}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,ticks:{callback:v=>'$'+fmt(v/1000,1)+'bn'}},y:xNoGrid},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+fmt(c.raw)+'m'}}}}});}
+  else {chSOTP.data.datasets[0].data=data; chSOTP.update();}
+}
+calcSOTP();
+
+/* ============ LIVE MULTIPLES ============ */
+(function(){
+  const sh=70, mc=LIVE*sh, nd=1819, ev=mc+nd;
+  document.getElementById('liveMult').innerHTML=`<span>Share price (15 Sep 2026)</span><b>$${LIVE}</b><span>ADS-equivalent shares</span><b>~${sh}m</b><span>Market cap</span><b>${money(mc)}</b><span>Net debt ex leases</span><b>$${fmt(nd)}m</b><span>Enterprise value</span><b>${money(ev)}</b><span>EV / FY25 EBITDA ($2,009m)</span><b>${(ev/2009).toFixed(1)}x</b><span>EV / FY26E EBITDA ($2,235m)</span><b>${(ev/2235).toFixed(1)}x</b><span>EV / FY27E EBITDA ($2,470m)</span><b>${(ev/2470).toFixed(1)}x</b><span>P/E FY26E ($6.51)</span><b>${(LIVE/6.51).toFixed(1)}x</b><span>P/E FY27E ($8.74)</span><b>${(LIVE/8.74).toFixed(1)}x</b><span>EV / FY26E sales ($5,150m)</span><b>${(ev/5150).toFixed(2)}x</b><span>Kyivstar stake / market cap</span><b>${(KYIV_PX*KYIV_SH*STAKE/mc*100).toFixed(0)}%</b><span>EV ex-Kyivstar stake / FY26E EBITDA ex-Ukraine</span><b>${((ev-KYIV_PX*KYIV_SH*STAKE)/(2235-770.6)).toFixed(1)}x</b>`;
+})();
+
+/* ============ HEAT MAP ============ */
+(function(){
+  const cols=['War / conflict','Currency','Regulation & tax','Energy','Competition','Political / governance'];
+  const rows=[
+    ['Pakistan',[2,5,4,4,3,3],['Regional tensions, terrorism','PKR 150→300; IMF programme','37% sector tax; spectrum costs','Grid fragility; diesel','Zong (China Mobile) price wars','Political volatility']],
+    ['Ukraine',[5,3,2,5,1,4],['Active war; infrastructure targeted','UAH managed; wartime controls','Waiting on fintech regulation','Grid attacks; 180MW solar, Starlink','Consolidated market; 47% share','Nationalisation tail risk via UBO history']],
+    ['Kazakhstan',[1,3,4,2,3,3],['Stable','KZT 440→540→487','VAT 12→16% unpassed','Utility inflation','State-owned Kazakhtelecom','Regulatory proximity of state rival']],
+    ['Bangladesh',[1,3,5,4,4,4],['Stable','BDT','SIM tax, duty 23%, BTRC BDT8.2bn claim','Hormuz-linked outages cut data 15%','#3 vs Grameenphone 45%','Political transition']],
+    ['Uzbekistan',[1,3,2,2,4,3],['Stable','UZS','Banking licence pending','Utility costs','Four-player fragmented market','State-backed operators']],
+    ['Group / HQ',[2,4,2,3,2,3],['Middle East tensions trigger sell-offs','Blended 4% deval assumed','Five regulators','Oil $90–120 scenario','—','LetterOne 45%; PEP indirect 21%; thin liquidity']]
+  ];
+  const h=document.getElementById('heat'); h.innerHTML='<div></div>'+cols.map(c=>`<div class="h">${c}</div>`).join('');
+  rows.forEach(r=>{h.insertAdjacentHTML('beforeend',`<div class="r">${r[0]}</div>`+r[1].map((v,i)=>`<div class="c h${v}" title="${r[0]} · ${cols[i]}: ${r[2][i]}">${v}</div>`).join(''));});
+})();
+</script>
+
+<script>
+/* ============ CHARTS ============ */
+const names=MK.map(m=>m.name), cols=MK.map(m=>C[m.k]);
+const bar=(id,cfg)=>new Chart(document.getElementById(id),cfg);
+
+// Segment revenue & EBITDA 2Q26
+bar('chSeg',{type:'bar',data:{labels:names,datasets:[{label:'Revenue 2Q26',data:MK.map(m=>m.rev2q),backgroundColor:cols},{label:'EBITDA 2Q26',data:MK.map(m=>m.eb2q),backgroundColor:cols.map(c=>c+'77')}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>'$'+v+'m'}}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{afterBody:it=>{const m=MK[it[0].dataIndex];return 'Margin: '+(m.eb2q/m.rev2q*100).toFixed(1)+'%';}}}}}});
+
+// Growth
+bar('chGrowth',{type:'bar',data:{labels:names,datasets:[{label:'Revenue growth YoY',data:MK.map(m=>+((m.rev2q/m.rev2q25-1)*100).toFixed(1)),backgroundColor:cols},{label:'EBITDA growth YoY',data:MK.map(m=>+((m.eb2q/m.eb2q25-1)*100).toFixed(1)),backgroundColor:cols.map(c=>c+'77')}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>v+'%'}}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw+'%'}}}}});
+
+// Subs with ARPU labels
+bar('chSubs',{type:'bar',data:{labels:names,datasets:[{label:'Subscribers (m, FY25 avg)',data:MK.map(m=>m.subs),backgroundColor:cols}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,ticks:{callback:v=>v+'m'}},y:xNoGrid},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+'m subscribers · ARPU $'+MK[c.dataIndex].arpu.toFixed(2)+'/month'}}}},plugins:[{id:'lbl',afterDatasetsDraw(ch){const {ctx}=ch;ctx.save();ctx.fillStyle=C.text;ctx.font='600 12px JetBrains Mono';ch.getDatasetMeta(0).data.forEach((b,i)=>{ctx.fillText(MK[i].subs+'m · $'+MK[i].arpu.toFixed(2)+'/mo',b.x+8,b.y+4);});ctx.restore();}}]});
+
+// Digital mix
+bar('chMix',{type:'line',data:{labels:['FY24','FY25','2Q25','1Q26','2Q26','FY26E','FY27E','FY28E','FY29E','FY30E'],datasets:[{label:'Digital % of revenue (actual)',data:[11.5,17.3,20.5,25.1,26.9,null,null,null,null,null],borderColor:C.accent,backgroundColor:C.accent,tension:.3},{label:'ZeroOne forecast',data:[null,null,null,null,26.9,25.6,29.0,32.2,35.0,37.4],borderColor:C.blue,backgroundColor:C.blue,borderDash:[6,4],tension:.3},{label:'Management aspiration',data:[null,null,null,null,null,null,null,null,50,null],borderColor:C.bull,backgroundColor:C.bull,pointStyle:'star',pointRadius:9,showLine:false}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,min:0,max:55,ticks:{callback:v=>v+'%'}}},plugins:{legend:{position:'bottom'}}}});
+
+// Unit economics
+bar('chUnit',{type:'bar',data:{labels:['Telecom foundation','Digital layer'],datasets:[{label:'Operating costs',data:[55,64],backgroundColor:'rgba(255,255,255,0.15)'},{label:'Capex (reinvested)',data:[20,7],backgroundColor:C.warn},{label:'Cash retained (EBITDA − capex)',data:[25,29],backgroundColor:C.bull}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{...xNoGrid,stacked:true},y:{...gridOpt,stacked:true,max:100,ticks:{callback:v=>'$'+v}}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': $'+c.raw+' per $100 revenue'}}}}});
+
+// Users
+bar('chUsers',{type:'bar',data:{labels:['Connectivity customers','Digital users (active)','Entertainment users','Financial-services users','Super-app users','Multiplay customers','Digital-only users'],datasets:[{label:'millions',data:[151,227.7,93.2,58.8,65,45.3,76],backgroundColor:[C.blue,C.accent,C.uzb,C.kaz,C.hq,C.ukr,C.ban]}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,ticks:{callback:v=>v+'m'}},y:xNoGrid},plugins:{legend:{display:false}}}});
+
+// Digital by vertical (stacked horizontal: 3 verticals with sub-vertical segments)
+bar('chDig',{type:'bar',data:{labels:['Financial Services','Digital Life','Digital Enterprise'],datasets:[
+ {label:'Financial services (JazzCash, Mobilink, Simply, Beepul)',data:[151,0,0],backgroundColor:C.bull},
+ {label:'Entertainment',data:[0,45,0],backgroundColor:C.uzb},{label:'Ride-hailing (Uklon)',data:[0,33,0],backgroundColor:C.ukr},{label:'Premium digital brands',data:[0,28,0],backgroundColor:C.hq},{label:'Healthcare',data:[0,10,0],backgroundColor:C.kaz},{label:'Other Digital Life',data:[0,3,0],backgroundColor:'rgba(255,255,255,0.2)'},
+ {label:'Identity & credentials',data:[0,0,43],backgroundColor:C.blue},{label:'AI, cloud, data, adtech',data:[0,0,29],backgroundColor:C.accent}]},
+ options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,stacked:true,ticks:{callback:v=>'$'+v+'m'}},y:{...xNoGrid,stacked:true}},plugins:{legend:{position:'bottom'},tooltip:{filter:i=>i.raw>0,callbacks:{label:c=>' '+c.dataset.label+': $'+c.raw+'m'}}}}});
+
+// Cost stack
+bar('chCost',{type:'bar',data:{labels:['FY25 per $100 revenue'],datasets:[{label:'Cost of services',data:[12.0],backgroundColor:'rgba(255,255,255,0.15)'},{label:'SG&A / operating costs',data:[42.8],backgroundColor:'rgba(255,255,255,0.28)'},{label:'Depreciation & amortisation',data:[18.2],backgroundColor:C.hq},{label:'Interest, FX, other non-operating',data:[14.9],backgroundColor:C.warn},{label:'Tax',data:[4.4],backgroundColor:C.bear},{label:'Minorities',data:[1.3],backgroundColor:C.uzb},{label:'Attributable profit (ex one-offs ≈ 6.4)',data:[6.4],backgroundColor:C.bull}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,stacked:true,max:100,ticks:{callback:v=>'$'+v}},y:{...xNoGrid,stacked:true}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': $'+c.raw}}}}});
+
+// Annual revenue & EBITDA
+const yrs=['FY22','FY23','FY24','FY25','FY26E','FY27E','FY28E','FY29E','FY30E'];
+bar('chAnnual',{type:'bar',data:{labels:yrs,datasets:[{label:'Revenue',data:[3755,3698,4004,4399,5150,5675,6244,6843,7478],backgroundColor:yrs.map((y,i)=>i<4?C.blue:C.blue+'88')},{label:'EBITDA',data:[1834,1664,1838,2009,2235,2470,2730,2993,3268],backgroundColor:yrs.map((y,i)=>i<4?C.accent:C.accent+'88')}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>'$'+fmt(v/1000,1)+'bn'}}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{afterBody:it=>{const i=it[0].dataIndex;const m=[48.8,45.0,45.9,45.7,43.4,43.5,43.7,43.7,43.7][i];return 'EBITDA margin: '+m+'%';}}}}}});
+
+// Quarterly
+bar('chQtr',{type:'bar',data:{labels:['2Q25','3Q25','4Q25','1Q26','2Q26'],datasets:[{label:'Revenue',data:[1087,1115,1171,1201,1271],backgroundColor:C.blue},{label:'Adjusted EBITDA',data:[520,524,526,517,552],backgroundColor:C.accent}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>'$'+v+'m'}}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{afterBody:it=>{const i=it[0].dataIndex;return 'Margin: '+[47.8,47.0,44.9,43.0,43.4][i]+'%';}}}}}});
+
+// Cash flow
+bar('chCF',{type:'bar',data:{labels:['FY22','FY23','FY24','FY25','FY26E','FY27E','FY28E'],datasets:[{label:'Operating cash flow',data:[2557,2111,1150,1353,1583,1640,1840],backgroundColor:C.blue},{label:'Capex',data:[-634,-531,-627,-733,-917,-918,-963],backgroundColor:C.bear},{label:'Free cash flow',data:[1923,1580,523,620,666,722,877],backgroundColor:C.bull}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>'$'+v+'m'}}},plugins:{legend:{position:'bottom'}}}});
+
+// FX history (indexed, units per USD; early 2021=100)
+bar('chFXhist',{type:'line',data:{labels:['2021','2022','2023','2024','2025','2026'],datasets:[
+ {label:'PKR',data:[100,140,200,185,185,187],borderColor:C.pak,backgroundColor:C.pak,tension:.3},
+ {label:'KZT',data:[100,110,107,115,125,113],borderColor:C.kaz,backgroundColor:C.kaz,tension:.3},
+ {label:'UAH (context)',data:[100,130,135,150,153,155],borderColor:C.ukr,backgroundColor:C.ukr,borderDash:[4,3],tension:.3},
+ {label:'BDT (context)',data:[100,110,130,140,143,143],borderColor:C.ban,backgroundColor:C.ban,borderDash:[4,3],tension:.3},
+ {label:'UZS (context)',data:[100,105,115,120,122,120],borderColor:C.uzb,backgroundColor:C.uzb,borderDash:[4,3],tension:.3}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>v}}},plugins:{legend:{position:'bottom'}}}});
+
+// Maturities
+bar('chMat',{type:'bar',data:{labels:['2026','2027','2028','2029','2030','2031','2032','2033'],datasets:[{label:'Residual 3.375% 2027 notes',data:[0,215,0,0,0,0,0,0],backgroundColor:C.warn},{label:'New 6.95% notes',data:[0,0,0,0,0,700,0,0],backgroundColor:C.blue},{label:'New 7.45% notes',data:[0,0,0,0,0,0,0,700],backgroundColor:C.hq}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{...xNoGrid,stacked:true},y:{...gridOpt,stacked:true,ticks:{callback:v=>'$'+v+'m'}}},plugins:{legend:{position:'bottom'}}}});
+
+// Debt & equity
+bar('chDebt',{type:'bar',data:{labels:['FY22','FY23','FY24','FY25'],datasets:[{label:'Long-term debt',data:[4507,2487,2171,2571],backgroundColor:C.bear+'aa'},{label:'Common equity',data:[2109,858,1099,1340],backgroundColor:C.bull+'aa'}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>'$'+fmt(v/1000,1)+'bn'}}},plugins:{legend:{position:'bottom'}}}});
+
+// Capex intensity
+bar('chCapex',{type:'bar',data:{labels:['Ukraine (3-yr avg)','Telecom foundation','Group LTM','Guide ex-Ukraine (mid)','Group ex-Ukraine LTM','Digital layer'],datasets:[{label:'% of revenue',data:[25,20,18.9,16,15,7],backgroundColor:[C.ukr,C.blue,C.accent,C.mute,C.accent+'88',C.bull]}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,ticks:{callback:v=>v+'%'}},y:xNoGrid},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+'% of revenue'}}}}});
+
+// Market share
+bar('chShare',{type:'bar',data:{labels:names,datasets:[{label:'VEON brand',data:[39,47,43,20,21],backgroundColor:cols},{label:'Largest competitor',data:[30,35,40,45,33],backgroundColor:'rgba(255,255,255,0.18)'},{label:'Second competitor',data:[22,18,17,31,25],backgroundColor:'rgba(255,255,255,0.10)'}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,max:60,ticks:{callback:v=>v+'%'}}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': ~'+c.raw+'%'}}}}});
+
+// Peers
+const peers=[['VEON @ $68.82',(LIVE*70+1819)/2235,LIVE/6.51,true],['Turkcell',2.22,7.25],['MTN',3.96,11.33],['Vodacom',4.36,12.77],['Ooredoo',4.38,9.84],['Airtel Africa',5.39,15.19],['Safaricom',6.29,12.33],['Millicom',6.61,14.88]];
+bar('chPeers',{type:'bar',data:{labels:peers.map(p=>p[0]),datasets:[{label:'EV / EBITDA (fwd)',data:peers.map(p=>+p[1].toFixed(2)),backgroundColor:peers.map(p=>p[3]?C.accent:C.blue)},{label:'P/E (fwd)',data:peers.map(p=>+p[2].toFixed(2)),backgroundColor:peers.map(p=>p[3]?C.accent+'77':C.blue+'77')}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:xNoGrid,y:{...gridOpt,ticks:{callback:v=>v+'x'}}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw+'x'}}}}});
+
+// Targets
+const tg=[['Northland',70],['Baptista bear',70.7],['Baptista base',80.8],['INAM',81],['Edison',81.6],['ZeroOne',82],['StoneX',85],['Litchfield Hills',94],['Baptista bull',99],['Auerbach Grayson',100]];
+bar('chTargets',{type:'bar',data:{labels:tg.map(t=>t[0]),datasets:[{label:'Price target ($/ADS)',data:tg.map(t=>t[1]),backgroundColor:tg.map(t=>t[1]>LIVE?C.bull:C.bear)}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,min:40,max:110,ticks:{callback:v=>'$'+v}},y:xNoGrid},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+c.raw+' · '+((c.raw/LIVE-1)*100).toFixed(0)+'% vs live'}}}},plugins:[{id:'liveLine',afterDraw(ch){const x=ch.scales.x.getPixelForValue(LIVE),{ctx,chartArea:a}=ch;ctx.save();ctx.strokeStyle=C.accent;ctx.setLineDash([5,4]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,a.top);ctx.lineTo(x,a.bottom);ctx.stroke();ctx.fillStyle=C.accent;ctx.font='600 11px JetBrains Mono';ctx.fillText('Live $'+LIVE,x+6,a.top+12);ctx.restore();}}]});
+
+// Auerbach SOTP
+bar('chAG',{type:'bar',data:{labels:['Pakistan mobile','Ukraine mobile','Kazakhstan mobile','Uzbekistan mobile','Bangladesh mobile','JazzCash (10x)','Uklon (18x)','Tabletki (7x)','Mobilink Bank'],datasets:[{label:'EV ($m)',data:[3164,3017,2500,832,729,1130,917,175,149],backgroundColor:[C.pak,C.ukr,C.kaz,C.uzb,C.ban,C.pak+'99',C.ukr+'99',C.ukr+'66',C.pak+'66']}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,ticks:{callback:v=>'$'+fmt(v/1000,1)+'bn'}},y:xNoGrid},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+fmt(c.raw)+'m'}}}}});
+
+// Risk matrix (bubble)
+const risks=[
+ {l:'Currency devaluation',x:4,y:5,c:C.warn,d:'PKR/KZT/BDT moves compress USD margins and cash upstreaming'},
+ {l:'Ukraine escalation',x:3,y:5,c:C.bear,d:'Infrastructure damage; capex >25%; 55% of market cap is KYIV'},
+ {l:'Kazakhstan margin',x:4,y:3,c:C.kaz,d:'VAT and bundling: −10pp; 18% of revenue'},
+ {l:'Energy cost / outages',x:4,y:3,c:C.warn,d:'Hormuz oil spike; South Asian grids'},
+ {l:'Regulation & tax',x:3,y:3,c:C.ban,d:'Sector taxes 37–47%; BTRC claim; SIM duties'},
+ {l:'JazzCash credit losses',x:2,y:4,c:C.pak,d:'224k loans/day untested through a cycle'},
+ {l:'Nationalisation (Ukraine)',x:1,y:5,c:C.bear,d:'Tail risk from historical UBO ties'},
+ {l:'M&A overreach',x:2,y:3,c:C.hq,d:'50% digital target may need dilutive deals'},
+ {l:'Governance / ownership',x:2,y:2,c:C.mute,d:'LetterOne 45%; PEP 21% indirect; ESG exclusions'},
+ {l:'Digital growth slows',x:3,y:2,c:C.accent,d:'54% growth normalises; acquired vs organic'},
+ {l:'Discount never closes',x:3,y:4,c:C.uzb,d:'Complexity and liquidity keep multiple at 3x'}];
+bar('chRisk',{type:'bubble',data:{datasets:risks.map(r=>({label:r.l,data:[{x:r.x,y:r.y,r:14}],backgroundColor:r.c+'cc',borderColor:r.c,d:r.d}))},options:{responsive:true,maintainAspectRatio:false,scales:{x:{...gridOpt,min:0.5,max:5.5,title:{display:true,text:'Probability (1 low → 5 high)',color:C.dim},ticks:{stepSize:1}},y:{...gridOpt,min:0.5,max:5.5,title:{display:true,text:'Impact on equity value (1 → 5)',color:C.dim},ticks:{stepSize:1}}},plugins:{legend:{position:'bottom',labels:{boxWidth:8}},tooltip:{callbacks:{title:it=>it[0].dataset.label,label:c=>' '+c.dataset.d}}}}});
+
+/* ============ TRADINGVIEW ============ */
+(function(){
+  const s=document.createElement('script'); s.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'; s.async=true;
+  s.innerHTML=JSON.stringify({autosize:true,symbol:'NASDAQ:VEON',interval:'D',timezone:'Etc/UTC',theme:'dark',style:'1',locale:'en',backgroundColor:'rgba(11,16,32,1)',gridColor:'rgba(255,255,255,0.06)',hide_top_toolbar:false,allow_symbol_change:true,save_image:false,calendar:false,support_host:'https://www.tradingview.com',compareSymbols:[{symbol:'NASDAQ:KYIV',position:'NewPriceScale'}]});
+  document.getElementById('tv_chart').appendChild(s);
+})();
+
+animateCounters();
+</script>
+</body>
+</html>
